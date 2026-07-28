@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@keyframes glitch-anim {
+  0% {
+    transform: translate(0);
+    filter: drop-shadow(-2px 0 #00f0ff) drop-shadow(2px 0 #ff0055);
+  }
+  20% {
+    transform: translate(-3px, 2px);
+    filter: drop-shadow(3px -1px #00f0ff) drop-shadow(-3px 1px #ff0055);
+  }
+  40% {
+    transform: translate(-1px, -2px);
+    filter: drop-shadow(-2px 2px #00ff66) drop-shadow(2px -2px #ff0055);
+  }
+  60% {
+    transform: translate(3px, 1px);
+    filter: drop-shadow(2px -2px #00f0ff) drop-shadow(-2px 2px #b000ff);
+  }
+  80% {
+    transform: translate(1px, -1px);
+    filter: drop-shadow(-3px 0 #00ff66) drop-shadow(3px 0 #ff0055);
+  }
+  100% {
+    transform: translate(0);
+    filter: drop-shadow(-2px 0 #00f0ff) drop-shadow(2px 0 #ff0055);
+  }
+}
+
+@keyframes scanline-anim {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+.animate-glitch-live {
+  animation: glitch-anim 0.35s infinite ease-in-out alternate;
+}
+
+.glitch-scanlines-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.4)
+  );
+  background-size: 100% 4px;
+  animation: scanline-anim 8s linear infinite;
+}

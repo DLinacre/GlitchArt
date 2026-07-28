@@ -1,0 +1,6 @@
+{
+  "name": "Linacre Asset Studio & GitHub Brand Suite",
+  "description": "Comprehensive brand asset hub, glitch tech logo showcase, interactive project folder generator, and GitHub profile customizing suite for DLinacre and LIN4CRE.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

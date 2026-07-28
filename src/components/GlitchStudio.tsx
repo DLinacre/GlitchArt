@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
 import { StudioConfig, BrandProfile } from '../types';
-import { Sparkles, Download, Copy, Check, RefreshCw, Layers, Palette, ChevronDown, Zap, Activity } from 'lucide-react';
+import {
+  Sparkles,
+  Download,
+  Copy,
+  Check,
+  RefreshCw,
+  Layers,
+  Palette,
+  ChevronDown,
+  Zap,
+  Activity,
+  Bot,
+  Wand2,
+  Loader2,
+  Lightbulb,
+  ArrowRight,
+  Cpu,
+  Code,
+  Terminal,
+  Shield,
+  FileCode,
+} from 'lucide-react';
 
 interface GlitchStudioProps {
   activeProfile: BrandProfile;
@@ -21,6 +42,75 @@ export interface ColorPalettePreset {
   previewCardBorder: string;
   previewCardBg: string;
 }
+
+export interface RepoContextPreset {
+  id: string;
+  name: string;
+  fullName: string;
+  description: string;
+  language: string;
+  topics: string[];
+}
+
+export interface GeminiSuggestion {
+  titleText: string;
+  subText: string;
+  handleText: string;
+  iconStyle: string;
+  themePreset: string;
+  reasoning: string;
+}
+
+export const SAMPLE_REPOS_CONTEXT: RepoContextPreset[] = [
+  {
+    id: 'glitch-tech-ui',
+    name: 'glitch-tech-ui',
+    fullName: 'DLinacre/glitch-tech-ui',
+    description: 'Cyberpunk HUD components, SVG glitch shaders, and high-frequency UI generators for React & Vite.',
+    language: 'TypeScript',
+    topics: ['ui-kit', 'glitch-art', 'cyberpunk', 'svg', 'hud'],
+  },
+  {
+    id: 'art-folder-generator',
+    name: 'art-folder-generator',
+    fullName: 'DLinacre/art-folder-generator',
+    description: 'Standardized 🎨_folder architecture & asset pack builder for game developers and open source repos.',
+    language: 'TypeScript',
+    topics: ['asset-management', 'github-repo', 'folder-tree', 'gamedev'],
+  },
+  {
+    id: 'cyber-engine-core',
+    name: 'cyber-engine-core',
+    fullName: 'DLinacre/cyber-engine-core',
+    description: 'Real-time state synchronization, WebGL renderer, and low-latency packet dispatcher.',
+    language: 'C++',
+    topics: ['engine', 'webgl', 'networking', 'realtime'],
+  },
+  {
+    id: 'linacre-auth-vault',
+    name: 'linacre-auth-vault',
+    fullName: 'DLinacre/linacre-auth-vault',
+    description: 'Zero-trust authentication protocol & encrypted local state engine.',
+    language: 'Rust',
+    topics: ['security', 'auth', 'oauth', 'cryptography'],
+  },
+  {
+    id: 'cyber-runner-3d',
+    name: 'cyber-runner-3d',
+    fullName: 'LIN4CRE/cyber-runner-3d',
+    description: 'High-octane neon runner web game engine with particle physics and synthwave audio synth.',
+    language: 'TypeScript',
+    topics: ['game-engine', 'canvas', 'synthwave', 'threejs'],
+  },
+  {
+    id: 'linacre-site-core',
+    name: 'linacre-site-core',
+    fullName: 'linacre_site/linacre-site-core',
+    description: 'Central brand asset hub, vector catalog system, and profile customizing infrastructure.',
+    language: 'TypeScript',
+    topics: ['brand-hub', 'vector-art', 'design-system'],
+  },
+];
 
 export const PALETTE_THEMES: ColorPalettePreset[] = [
   {
@@ -154,6 +244,20 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
   const [copied, setCopied] = useState(false);
   const [liveGlitchMode, setLiveGlitchMode] = useState(false);
 
+  // Gemini AI Auto-Generate state
+  const [selectedRepoId, setSelectedRepoId] = useState<string>('glitch-tech-ui');
+  const [customRepo, setCustomRepo] = useState({
+    name: 'cyber-hud-next',
+    description: 'Futuristic HUD overlay framework with animated canvas nodes & WebGL shaders',
+    language: 'TypeScript',
+    topics: 'hud, cyberpunk, shaders, react',
+  });
+  const [refineInstruction, setRefineInstruction] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<GeminiSuggestion[]>([]);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [showAiSection, setShowAiSection] = useState(true);
+
   // Active theme preset object
   const activePalette = PALETTE_THEMES.find((p) => p.id === selectedThemeId) || PALETTE_THEMES[0];
 
@@ -167,6 +271,84 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
         secondaryColor: pal.secondary,
       }));
     }
+  };
+
+  const normalizeIcon = (iconStr: string): StudioConfig['selectedIcon'] => {
+    const lower = (iconStr || '').toLowerCase();
+    if (lower.includes('joy') || lower.includes('game') || lower.includes('pad')) return 'joystick';
+    if (lower.includes('term') || lower.includes('cli') || lower.includes('shell')) return 'terminal';
+    if (lower.includes('cube') || lower.includes('box') || lower.includes('3d')) return 'cube';
+    if (lower.includes('shield') || lower.includes('auth') || lower.includes('lock') || lower.includes('sec')) return 'shield';
+    if (lower.includes('wrench') || lower.includes('tool') || lower.includes('gear')) return 'wrench';
+    if (lower.includes('wave') || lower.includes('audio') || lower.includes('sound')) return 'waveform';
+    if (lower.includes('circ') || lower.includes('chip') || lower.includes('cpu')) return 'circuit';
+    return 'code';
+  };
+
+  const handleGenerateSuggestions = async () => {
+    setIsGenerating(true);
+    setAiError(null);
+
+    try {
+      let repoPayload;
+      if (selectedRepoId === 'custom') {
+        repoPayload = {
+          repoName: customRepo.name,
+          repoDescription: customRepo.description + (refineInstruction ? ` (Note: ${refineInstruction})` : ''),
+          repoLanguage: customRepo.language,
+          repoTopics: customRepo.topics.split(',').map((s) => s.trim()),
+          assetType: config.assetType,
+        };
+      } else {
+        const repo = SAMPLE_REPOS_CONTEXT.find((r) => r.id === selectedRepoId) || SAMPLE_REPOS_CONTEXT[0];
+        repoPayload = {
+          repoName: repo.name,
+          repoDescription: repo.description + (refineInstruction ? ` (Note: ${refineInstruction})` : ''),
+          repoLanguage: repo.language,
+          repoTopics: repo.topics,
+          assetType: config.assetType,
+        };
+      }
+
+      const res = await fetch('/api/gemini/generate-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(repoPayload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status} error`);
+      }
+
+      const data = await res.json();
+      if (data.suggestions && Array.isArray(data.suggestions)) {
+        setAiSuggestions(data.suggestions);
+      } else {
+        throw new Error('Invalid suggestions output format received from Gemini.');
+      }
+    } catch (err: any) {
+      console.error('Gemini generate error:', err);
+      setAiError(err.message || 'Failed to generate suggestions');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleApplySuggestion = (sug: GeminiSuggestion) => {
+    const targetThemeId = PALETTE_THEMES.find((p) => p.id === sug.themePreset)
+      ? sug.themePreset
+      : PALETTE_THEMES.find((p) => p.name.toLowerCase().includes(sug.themePreset.toLowerCase()))?.id || 'cyber_cyan';
+
+    handlePaletteSelect(targetThemeId);
+
+    setConfig((prev) => ({
+      ...prev,
+      titleText: sug.titleText.toUpperCase(),
+      subtitleText: sug.subText,
+      handleText: sug.handleText,
+      selectedIcon: normalizeIcon(sug.iconStyle),
+    }));
   };
 
   // Generate SVG Code dynamically based on config
@@ -295,6 +477,189 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Gemini AI Auto-Generate Panel */}
+        <div className="bg-gradient-to-b from-cyan-950/40 via-gray-950 to-purple-950/20 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-lg shadow-cyan-950/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <span>GEMINI REPO AUTO-GENERATE</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 font-semibold">
+                    AI 3.6 Flash
+                  </span>
+                </h3>
+                <p className="text-[11px] text-gray-400">
+                  Analyze repository context from GitHubRepoSync to generate custom branding text & icon themes
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAiSection(!showAiSection)}
+              className="text-xs text-gray-400 hover:text-cyan-300 font-mono transition-colors cursor-pointer"
+            >
+              {showAiSection ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
+          {showAiSection && (
+            <div className="space-y-3 pt-2 border-t border-gray-800/80">
+              {/* Repository Selector */}
+              <div>
+                <label className="block text-[10px] font-mono font-bold text-gray-400 mb-1 flex items-center justify-between">
+                  <span>SELECT REPOSITORY CONTEXT</span>
+                  <span className="text-cyan-400 font-normal">GitHubRepoSync</span>
+                </label>
+                <select
+                  value={selectedRepoId}
+                  onChange={(e) => setSelectedRepoId(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 hover:border-cyan-500/50 text-cyan-300 font-mono text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer"
+                >
+                  {SAMPLE_REPOS_CONTEXT.map((repo) => (
+                    <option key={repo.id} value={repo.id} className="bg-gray-950 text-gray-200">
+                      {repo.fullName} ({repo.language})
+                    </option>
+                  ))}
+                  <option value="custom" className="bg-gray-950 text-yellow-300 font-bold">
+                    + Custom Repository Details...
+                  </option>
+                </select>
+              </div>
+
+              {/* Custom Repo Fields if "custom" is selected */}
+              {selectedRepoId === 'custom' && (
+                <div className="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2 text-xs">
+                  <div>
+                    <label className="block text-[10px] text-gray-400 mb-0.5">Repo Name</label>
+                    <input
+                      type="text"
+                      value={customRepo.name}
+                      onChange={(e) => setCustomRepo({ ...customRepo, name: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded px-2.5 py-1.5 font-mono text-cyan-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-400 mb-0.5">Description</label>
+                    <textarea
+                      rows={2}
+                      value={customRepo.description}
+                      onChange={(e) => setCustomRepo({ ...customRepo, description: e.target.value })}
+                      className="w-full bg-gray-900 border border-gray-800 rounded px-2.5 py-1.5 font-mono text-gray-300 text-[11px]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-gray-400 mb-0.5">Language</label>
+                      <input
+                        type="text"
+                        value={customRepo.language}
+                        onChange={(e) => setCustomRepo({ ...customRepo, language: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 font-mono text-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-gray-400 mb-0.5">Topics (comma separated)</label>
+                      <input
+                        type="text"
+                        value={customRepo.topics}
+                        onChange={(e) => setCustomRepo({ ...customRepo, topics: e.target.value })}
+                        className="w-full bg-gray-900 border border-gray-800 rounded px-2 py-1 font-mono text-gray-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Prompt Refinement Note */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Optional prompt note (e.g., 'Emphasize high frequency, dark synth, C++')"
+                  value={refineInstruction}
+                  onChange={(e) => setRefineInstruction(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleGenerateSuggestions}
+                disabled={isGenerating}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono font-bold text-xs shadow-md shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-200" />
+                    <span>Analyzing Repo & Generating Suggestions...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4 text-cyan-300" />
+                    <span>AUTO-GENERATE BRANDING WITH GEMINI</span>
+                  </>
+                )}
+              </button>
+
+              {aiError && (
+                <div className="p-2.5 bg-red-950/60 border border-red-500/50 rounded-xl text-xs text-red-300 font-mono">
+                  ⚠️ {aiError}
+                </div>
+              )}
+
+              {/* Render AI Suggested Cards */}
+              {aiSuggestions.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                    <span className="flex items-center gap-1 text-cyan-300">
+                      <Lightbulb className="w-3 h-3 text-yellow-400" />
+                      <span>{aiSuggestions.length} GEMINI AI BRAND SUGGESTIONS</span>
+                    </span>
+                    <span>Click to apply to canvas</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 max-h-[260px] overflow-y-auto pr-1">
+                    {aiSuggestions.map((sug, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleApplySuggestion(sug)}
+                        className="p-3 bg-gray-950 hover:bg-gray-900 border border-gray-800 hover:border-cyan-500/60 rounded-xl cursor-pointer transition-all group space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-xs text-cyan-300 group-hover:text-white transition-colors">
+                            {sug.titleText}
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 bg-cyan-950 text-cyan-400 rounded border border-cyan-800/50">
+                            Theme: {sug.themePreset}
+                          </span>
+                        </div>
+
+                        <div className="text-[11px] font-mono text-gray-400 line-clamp-1">
+                          {sug.subText}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 pt-1 border-t border-gray-900">
+                          <span className="text-gray-400">{sug.handleText} • Icon: {sug.iconStyle}</span>
+                          <span className="text-cyan-400 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform font-bold">
+                            <span>Apply</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 italic line-clamp-2">
+                          "{sug.reasoning}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Text Customizer Fields */}
@@ -522,7 +887,7 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Live Glitch Mode Animation Toggle */}
+              {/* Live Preview Mode Animation Toggle */}
               <button
                 type="button"
                 onClick={() => setLiveGlitchMode(!liveGlitchMode)}
@@ -531,10 +896,10 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                     ? 'bg-red-500 text-white border-red-400 shadow-md shadow-red-500/30 animate-pulse'
                     : 'bg-gray-950 text-gray-400 border-gray-800 hover:text-white hover:border-gray-700'
                 }`}
-                title="Toggle CSS Keyframe Glitch Animation"
+                title="Toggle Live Preview with Glitch Animation & Scanlines"
               >
                 <Zap className={`w-3.5 h-3.5 ${liveGlitchMode ? 'text-yellow-300' : 'text-gray-500'}`} />
-                <span>{liveGlitchMode ? 'LIVE GLITCH: ON' : 'LIVE GLITCH: OFF'}</span>
+                <span>Live Preview: {liveGlitchMode ? 'ON' : 'OFF'}</span>
               </button>
 
               <span className={`px-2.5 py-1.5 rounded bg-gray-950 font-mono text-xs border ${activePalette.badgeBorder} ${activePalette.badgeText}`}>

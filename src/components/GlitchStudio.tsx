@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StudioConfig, BrandProfile } from '../types';
 import {
   Sparkles,
@@ -21,7 +21,20 @@ import {
   Terminal,
   Shield,
   FileCode,
+  Music,
+  Volume2,
+  VolumeX,
+  Dices,
+  Play,
+  Square,
+  Radio,
 } from 'lucide-react';
+import {
+  ThemeTunePlayer,
+  THEME_TUNE_TRACKS,
+  generateInfiniteRandomPrompt,
+  ThemeTuneTrack,
+} from '../utils/themeTuneSynth';
 
 interface GlitchStudioProps {
   activeProfile: BrandProfile;
@@ -253,10 +266,59 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
     topics: 'hud, cyberpunk, shaders, react',
   });
   const [refineInstruction, setRefineInstruction] = useState('');
+  const [promptFlashed, setPromptFlashed] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<GeminiSuggestion[]>([]);
   const [aiError, setAiError] = useState<string | null>(null);
   const [showAiSection, setShowAiSection] = useState(true);
+
+  // Theme Tune Synth Audio State
+  const [isPlayingTune, setIsPlayingTune] = useState(false);
+  const [selectedTrackId, setSelectedTrackId] = useState<string>(THEME_TUNE_TRACKS[0].id);
+  const [isMuted, setIsMuted] = useState(false);
+  const playerRef = useRef<ThemeTunePlayer | null>(null);
+
+  useEffect(() => {
+    playerRef.current = new ThemeTunePlayer(THEME_TUNE_TRACKS[0]);
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.stop();
+      }
+    };
+  }, []);
+
+  const handleToggleTune = () => {
+    if (!playerRef.current) return;
+    if (isPlayingTune) {
+      playerRef.current.stop();
+      setIsPlayingTune(false);
+    } else {
+      playerRef.current.play();
+      setIsPlayingTune(true);
+    }
+  };
+
+  const handleSelectTrack = (trackId: string) => {
+    setSelectedTrackId(trackId);
+    const track = THEME_TUNE_TRACKS.find((t) => t.id === trackId);
+    if (track && playerRef.current) {
+      playerRef.current.setTrack(track);
+    }
+  };
+
+  const handleToggleMute = () => {
+    if (!playerRef.current) return;
+    const newMute = !isMuted;
+    setIsMuted(newMute);
+    playerRef.current.setVolume(newMute ? 0 : 0.15);
+  };
+
+  const handleGenerateInfinitePrompt = () => {
+    const freshPrompt = generateInfiniteRandomPrompt();
+    setRefineInstruction(freshPrompt);
+    setPromptFlashed(true);
+    setTimeout(() => setPromptFlashed(false), 800);
+  };
 
   // Active theme preset object
   const activePalette = PALETTE_THEMES.find((p) => p.id === selectedThemeId) || PALETTE_THEMES[0];
@@ -574,36 +636,83 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                 </div>
               )}
 
-              {/* Prompt Refinement Note */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="Optional prompt note (e.g., 'Emphasize high frequency, dark synth, C++')"
-                  value={refineInstruction}
-                  onChange={(e) => setRefineInstruction(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:border-cyan-500"
-                />
+              {/* Prompt Refinement Note & Infinite Prompt Generator */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-mono text-gray-400">
+                    STYLE DIRECTIVE / PROMPT NOTE
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateInfinitePrompt}
+                    className="flex items-center gap-1 text-[10px] font-mono text-yellow-300 hover:text-yellow-200 bg-yellow-950/40 hover:bg-yellow-900/60 border border-yellow-500/40 px-2 py-0.5 rounded-lg transition-all cursor-pointer font-bold shadow-sm"
+                    title="Generate a unique infinite prompt variation"
+                  >
+                    <Dices className="w-3 h-3 text-yellow-400 animate-spin-slow" />
+                    <span>🎲 INFINITE RANDOM PROMPT</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Optional prompt note (e.g., 'Emphasize high frequency, dark synth, C++')"
+                    value={refineInstruction}
+                    onChange={(e) => setRefineInstruction(e.target.value)}
+                    className={`w-full bg-gray-950 border rounded-xl px-3 py-1.5 text-xs font-mono text-gray-300 placeholder-gray-600 focus:outline-none transition-all ${
+                      promptFlashed
+                        ? 'border-yellow-400 ring-2 ring-yellow-400/50 bg-yellow-950/20 text-yellow-200'
+                        : 'border-gray-800 focus:border-cyan-500'
+                    }`}
+                  />
+                  {refineInstruction && (
+                    <button
+                      type="button"
+                      onClick={() => setRefineInstruction('')}
+                      className="absolute right-2 top-1.5 text-[10px] text-gray-500 hover:text-gray-300 font-mono"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Action Button */}
-              <button
-                type="button"
-                onClick={handleGenerateSuggestions}
-                disabled={isGenerating}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono font-bold text-xs shadow-md shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-cyan-200" />
-                    <span>Analyzing Repo & Generating Suggestions...</span>
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="w-4 h-4 text-cyan-300" />
-                    <span>AUTO-GENERATE BRANDING WITH GEMINI</span>
-                  </>
-                )}
-              </button>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateSuggestions}
+                  disabled={isGenerating}
+                  className="sm:col-span-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono font-bold text-xs shadow-md shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-cyan-200" />
+                      <span>Analyzing Repo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 text-cyan-300" />
+                      <span>AUTO-GENERATE BRANDING</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleGenerateInfinitePrompt();
+                    setTimeout(() => {
+                      handleGenerateSuggestions();
+                    }, 50);
+                  }}
+                  disabled={isGenerating}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/50 text-purple-200 hover:text-white font-mono font-bold text-xs transition-all disabled:opacity-50 cursor-pointer"
+                  title="Generate a fresh random prompt and trigger Gemini AI instantly"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  <span>Random & Gen</span>
+                </button>
+              </div>
 
               {aiError && (
                 <div className="p-2.5 bg-red-950/60 border border-red-500/50 rounded-xl text-xs text-red-300 font-mono">
@@ -908,8 +1017,83 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
             </div>
           </div>
 
+          {/* Cyberpunk Theme Tunes Audio Synthesizer Bar */}
+          <div className="p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 border border-gray-800 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleToggleTune}
+                className={`p-2 rounded-lg border font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isPlayingTune
+                    ? 'bg-cyan-500 text-gray-950 border-cyan-400 shadow-md shadow-cyan-500/30'
+                    : 'bg-gray-900 text-cyan-400 border-cyan-500/40 hover:bg-cyan-950'
+                }`}
+                title={isPlayingTune ? 'Pause Theme Tune' : 'Play Theme Tune Synth'}
+              >
+                {isPlayingTune ? (
+                  <>
+                    <Square className="w-3.5 h-3.5 fill-current" />
+                    <span>PAUSE TUNE</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>PLAY THEME TUNE</span>
+                  </>
+                )}
+              </button>
+
+              {/* Animated Frequency Equalizer when playing */}
+              {isPlayingTune && (
+                <div className="flex items-end gap-0.5 h-4 px-1">
+                  <span className="w-1 bg-cyan-400 rounded-full animate-bounce h-2"></span>
+                  <span className="w-1 bg-cyan-300 rounded-full animate-bounce h-4 [animation-delay:0.1s]"></span>
+                  <span className="w-1 bg-blue-400 rounded-full animate-bounce h-3 [animation-delay:0.2s]"></span>
+                  <span className="w-1 bg-purple-400 rounded-full animate-bounce h-4 [animation-delay:0.15s]"></span>
+                </div>
+              )}
+            </div>
+
+            {/* Track Selector */}
+            <div className="flex items-center gap-2 flex-1 max-w-xs min-w-[200px]">
+              <Music className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <select
+                value={selectedTrackId}
+                onChange={(e) => handleSelectTrack(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 text-cyan-300 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:border-cyan-500 cursor-pointer"
+              >
+                {THEME_TUNE_TRACKS.map((t) => (
+                  <option key={t.id} value={t.id} className="bg-gray-950 text-gray-200">
+                    🎵 {t.name} ({t.genre})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Mute toggle */}
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              className={`p-1.5 rounded-lg border transition-all ${
+                isMuted
+                  ? 'bg-red-950/60 border-red-500/50 text-red-300'
+                  : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+              }`}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+          </div>
+
           {/* SVG Preview Container dynamically styled with palette classes & animated glitch keyframe effects */}
-          <div className={`relative w-full rounded-2xl p-4 border shadow-inner overflow-hidden flex items-center justify-center min-h-[300px] transition-all duration-300 ${activePalette.previewCardBg} ${activePalette.previewCardBorder}`}>
+          <div
+            style={{
+              '--theme-primary': activePalette.primary,
+              '--theme-secondary': activePalette.secondary,
+              '--theme-glow': `${activePalette.primary}33`,
+            } as React.CSSProperties}
+            className={`relative w-full rounded-2xl p-4 border shadow-inner overflow-hidden flex items-center justify-center min-h-[300px] transition-all duration-300 ${activePalette.previewCardBg} ${activePalette.previewCardBorder}`}
+          >
             {liveGlitchMode && (
               <div className="absolute inset-0 pointer-events-none z-10 glitch-scanlines-overlay opacity-40" />
             )}

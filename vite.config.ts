@@ -1,11 +1,28 @@
+/// <reference types="vitest" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      visualizer({
+        filename: 'dist/stats.html',
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        title: 'Linacre Studio - Production Bundle Visualizer Analysis',
+      }),
+    ],
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.ts',
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

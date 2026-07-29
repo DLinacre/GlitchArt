@@ -158,7 +158,11 @@ export const FolderNodeGraph: React.FC<FolderNodeGraphProps> = ({ tree, onSelect
       .attr('font-weight', (d: any) => (d.data.type === 'folder' ? 'bold' : 'normal'));
 
     // Initial positioning center offset
-    svg.call((zoom as any).transform, d3.zoomIdentity.translate(20, 20).scale(0.95));
+    try {
+      svg.call((zoom as any).transform, d3.zoomIdentity.translate(20, 20).scale(0.95));
+    } catch (err) {
+      // Ignore d3-zoom extent calculations in head-less JSDOM environments
+    }
 
   }, [tree, onSelectNode]);
 

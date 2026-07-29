@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrandProfile } from '../types';
 import { PROFILES } from '../data/profileData';
-import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard, FileJson, Sun, Eye, Contrast, Clock } from 'lucide-react';
+import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard, FileJson, Sun, Eye, Contrast, Clock, Zap } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 interface HeaderNavProps {
@@ -17,6 +17,7 @@ interface HeaderNavProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onOpenShortcuts?: () => void;
+  onOpenQuickActions?: () => void;
   onExportSession: () => void;
   isHighContrast: boolean;
   onToggleHighContrast: () => void;
@@ -36,6 +37,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onUndo,
   onRedo,
   onOpenShortcuts,
+  onOpenQuickActions,
   onExportSession,
   isHighContrast,
   onToggleHighContrast,
@@ -215,6 +217,16 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 className="p-2 rounded-lg bg-gray-900 border border-gray-800 hover:border-emerald-500/50 text-gray-400 hover:text-emerald-300 transition-all cursor-pointer"
               >
                 <FileJson className="w-4 h-4" />
+              </button>
+            </Tooltip>
+
+            {/* Quick Actions Floating Palette Button */}
+            <Tooltip content="Quick Actions Menu (Alt key)" position="bottom">
+              <button
+                onClick={onOpenQuickActions}
+                className="p-2 rounded-lg bg-gray-900 border border-gray-800 hover:border-amber-500/50 text-gray-400 hover:text-amber-300 transition-all cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-400" />
               </button>
             </Tooltip>
 

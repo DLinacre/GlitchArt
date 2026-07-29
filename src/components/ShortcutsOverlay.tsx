@@ -32,6 +32,7 @@ export const ShortcutsOverlay: React.FC<ShortcutsOverlayProps> = ({ isOpen, onCl
     {
       category: 'System & Overlays',
       items: [
+        { keys: ['Alt'], label: 'Open Quick Actions floating menu (Save, Clear Cache, Fullscreen)' },
         { keys: ['?'], label: 'Open / toggle this Keyboard Shortcuts overlay' },
         { keys: ['⌘/Ctrl', 'K'], label: 'Alternative shortcut to toggle Hotkeys modal' },
         { keys: ['Esc'], label: 'Close active overlay or inspector modal' },

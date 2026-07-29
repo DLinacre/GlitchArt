@@ -9,10 +9,11 @@ import { ReadmeBuilder } from './components/ReadmeBuilder';
 import { GitHubRepoSync } from './components/GitHubRepoSync';
 import { AssetInspectModal } from './components/AssetInspectModal';
 import { ShortcutsOverlay } from './components/ShortcutsOverlay';
+import { QuickActionsMenu } from './components/QuickActionsMenu';
 import { Tooltip } from './components/Tooltip';
 import { INITIAL_FOLDER_STRUCTURE, generateReadmeBoilerplate } from './data/directoryPreset';
 import JSZip from 'jszip';
-import { ExternalLink, Keyboard, Clock, Download, Activity, CheckCircle2 } from 'lucide-react';
+import { ExternalLink, Keyboard, Clock, Download, Activity, CheckCircle2, Zap } from 'lucide-react';
 
 export interface AppStateSnapshot {
   activeProfile: BrandProfile;
@@ -27,8 +28,35 @@ export default function App() {
   const [inspectModal, setInspectModal] = useState<{ svgCode: string; name: string } | null>(null);
   const [studioPresetText, setStudioPresetText] = useState<string>('');
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isHighContrast, setIsHighContrast] = useState<boolean>(false);
   const [zipProgress, setZipProgress] = useState<number | null>(null);
+
+  // Sync fullscreen state change events
+  useEffect(() => {
+    const handleFSChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFSChange);
+    return () => document.removeEventListener('fullscreenchange', handleFSChange);
+  }, []);
+
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
+
+  const handleClearCache = useCallback(() => {
+    setHistory([]);
+    setRedoStack([]);
+    setStudioPresetText('');
+    const ts = new Date().toLocaleTimeString();
+    setLastModifiedTimestamp(ts);
+  }, []);
 
   // Session activity timestamp
   const [lastModifiedTimestamp, setLastModifiedTimestamp] = useState<string>(
@@ -170,6 +198,38 @@ export default function App() {
         return;
       }
 
+      // Quick Actions Trigger (Alt key alone or Alt combos)
+      if (e.key === 'Alt' || e.key === 'Option') {
+        if (!isInput) {
+          e.preventDefault();
+          setIsQuickActionsOpen((prev) => !prev);
+        }
+        return;
+      }
+
+      if (e.altKey && !isInput) {
+        if (e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          handleExportSession();
+          return;
+        }
+        if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          handleClearCache();
+          return;
+        }
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          handleToggleFullscreen();
+          return;
+        }
+        if (e.key === 'h' || e.key === 'H') {
+          e.preventDefault();
+          setIsHighContrast((prev) => !prev);
+          return;
+        }
+      }
+
       // Toggle Hotkey Overlay (? or Cmd+K)
       if (e.key === '?' || (isCmdOrCtrl && (e.key === 'k' || e.key === 'K'))) {
         if (!isInput) {
@@ -179,9 +239,11 @@ export default function App() {
         return;
       }
 
-      // Escape key to close modals
+      // Escape key to close active overlays
       if (e.key === 'Escape') {
-        if (isShortcutsOpen) {
+        if (isQuickActionsOpen) {
+          setIsQuickActionsOpen(false);
+        } else if (isShortcutsOpen) {
           setIsShortcutsOpen(false);
         } else if (inspectModal) {
           setInspectModal(null);
@@ -191,7 +253,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [changeTabWithHistory, handleUndo, handleRedo, isShortcutsOpen, inspectModal]);
+  }, [changeTabWithHistory, handleUndo, handleRedo, isShortcutsOpen, isQuickActionsOpen, inspectModal, handleExportSession, handleClearCache, handleToggleFullscreen]);
 
   const handleInspectAsset = (svgCode: string, name: string) => {
     setInspectModal({ svgCode, name });
@@ -270,6 +332,7 @@ export default function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onOpenQuickActions={() => setIsQuickActionsOpen(true)}
         onExportSession={handleExportSession}
         isHighContrast={isHighContrast}
         onToggleHighContrast={() => setIsHighContrast((prev) => !prev)}
@@ -374,8 +437,19 @@ export default function App() {
         </div>
       )}
 
-      {/* Floating Keyboard Shortcuts Trigger Pill in bottom right */}
-      <div className="fixed bottom-6 right-6 z-40 hidden sm:block">
+      {/* Floating Triggers in bottom right */}
+      <div className="fixed bottom-6 right-6 z-40 hidden sm:flex items-center gap-2">
+        <Tooltip content="Quick Actions Menu (Alt key)" position="left">
+          <button
+            onClick={() => setIsQuickActionsOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400 text-xs font-mono font-bold text-amber-300 shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
+          >
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span>Quick Actions</span>
+            <kbd className="px-1.5 py-0.5 text-[10px] bg-slate-950 border border-slate-800 text-gray-400 rounded">Alt</kbd>
+          </button>
+        </Tooltip>
+
         <Tooltip content="Keyboard Shortcuts (?) [⌘1-5, Ctrl+Z/Y]" position="left">
           <button
             onClick={() => setIsShortcutsOpen(true)}
@@ -407,6 +481,21 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Quick Actions Menu Modal */}
+      <QuickActionsMenu
+        isOpen={isQuickActionsOpen}
+        onClose={() => setIsQuickActionsOpen(false)}
+        onSaveWorkspace={handleExportSession}
+        onClearCache={handleClearCache}
+        onToggleFullscreen={handleToggleFullscreen}
+        isFullscreen={isFullscreen}
+        onExportZip={handleDownloadAllZip}
+        onToggleHighContrast={() => setIsHighContrast((prev) => !prev)}
+        isHighContrast={isHighContrast}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onSwitchTab={changeTabWithHistory}
+      />
 
       {/* Keyboard Shortcuts Overlay Modal */}
       <ShortcutsOverlay

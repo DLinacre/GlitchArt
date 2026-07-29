@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrandProfile } from '../types';
 import { PROFILES } from '../data/profileData';
-import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard } from 'lucide-react';
+import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard, FileJson, Sun, Eye, Contrast, Clock } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 interface HeaderNavProps {
@@ -17,6 +17,10 @@ interface HeaderNavProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onOpenShortcuts?: () => void;
+  onExportSession: () => void;
+  isHighContrast: boolean;
+  onToggleHighContrast: () => void;
+  lastModified?: string;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -32,11 +36,17 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onUndo,
   onRedo,
   onOpenShortcuts,
+  onExportSession,
+  isHighContrast,
+  onToggleHighContrast,
+  lastModified,
 }) => {
   const profile = PROFILES[activeProfile];
 
   return (
-    <header className="sticky top-0 z-40 bg-gray-950/90 backdrop-blur-md border-b border-gray-800 text-gray-100">
+    <header className={`sticky top-0 z-40 backdrop-blur-md text-gray-100 transition-colors ${
+      isHighContrast ? 'bg-black border-b-2 border-cyan-400' : 'bg-gray-950/90 border-b border-gray-800'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between py-3 gap-4">
           
@@ -81,7 +91,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex items-center space-x-1 sm:space-x-2 bg-gray-900/80 p-1 rounded-xl border border-gray-800/80 w-full md:w-auto overflow-x-auto">
+          <nav className={`flex items-center space-x-1 sm:space-x-2 p-1 rounded-xl w-full md:w-auto overflow-x-auto ${
+            isHighContrast ? 'bg-zinc-900 border-2 border-cyan-500' : 'bg-gray-900/80 border border-gray-800/80'
+          }`}>
             <Tooltip content="Switch to Theme Collection (⌘1)" position="bottom">
               <button
                 onClick={() => setActiveTab('gallery')}
@@ -154,11 +166,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           </nav>
 
 
-          {/* Undo/Redo, Hotkeys & Desktop Profile Switcher & ZIP Action */}
+          {/* Action Bar & Controls */}
           <div className="hidden md:flex items-center space-x-2">
             
             {/* Undo / Redo Control Pair */}
-            <div className="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+            <div className={`flex items-center rounded-lg p-0.5 ${
+              isHighContrast ? 'bg-black border border-cyan-400' : 'bg-gray-900 border border-gray-800'
+            }`}>
               <Tooltip content={canUndo ? `Undo last action (${undoCount}) [Ctrl+Z]` : 'Nothing to undo'} position="bottom">
                 <button
                   onClick={onUndo}
@@ -180,6 +194,30 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               </Tooltip>
             </div>
 
+            {/* High Contrast Accessibility Toggle */}
+            <Tooltip content={isHighContrast ? 'Switch to Standard Dark Glass Theme' : 'Switch to High-Contrast Accessibility Mode'} position="bottom">
+              <button
+                onClick={onToggleHighContrast}
+                className={`p-2 rounded-lg transition-all cursor-pointer ${
+                  isHighContrast
+                    ? 'bg-yellow-400 text-black border-2 border-yellow-200 font-bold shadow-lg shadow-yellow-400/30'
+                    : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-yellow-300'
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+              </button>
+            </Tooltip>
+
+            {/* Export Session Backup Button */}
+            <Tooltip content="Export Session Data JSON backup" position="bottom">
+              <button
+                onClick={onExportSession}
+                className="p-2 rounded-lg bg-gray-900 border border-gray-800 hover:border-emerald-500/50 text-gray-400 hover:text-emerald-300 transition-all cursor-pointer"
+              >
+                <FileJson className="w-4 h-4" />
+              </button>
+            </Tooltip>
+
             {/* Global Shortcuts Button */}
             <Tooltip content="View Keyboard Shortcuts Overlay (? / ⌘K)" position="bottom">
               <button
@@ -191,7 +229,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             </Tooltip>
 
             {/* Profile Switcher */}
-            <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-1">
+            <div className={`flex rounded-lg p-1 ${
+              isHighContrast ? 'bg-black border border-cyan-400' : 'bg-gray-900 border border-gray-800'
+            }`}>
               <Tooltip content="Switch to @DLinacre brand profile" position="bottom">
                 <button
                   onClick={() => setActiveProfile('dlinacre')}
@@ -247,4 +287,5 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     </header>
   );
 };
+
 

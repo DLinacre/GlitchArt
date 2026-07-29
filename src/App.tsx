@@ -12,12 +12,13 @@ import { ShortcutsOverlay } from './components/ShortcutsOverlay';
 import { Tooltip } from './components/Tooltip';
 import { INITIAL_FOLDER_STRUCTURE, generateReadmeBoilerplate } from './data/directoryPreset';
 import JSZip from 'jszip';
-import { ExternalLink, Keyboard } from 'lucide-react';
+import { ExternalLink, Keyboard, Clock, Download, Activity, CheckCircle2 } from 'lucide-react';
 
 export interface AppStateSnapshot {
   activeProfile: BrandProfile;
   activeTab: 'gallery' | 'studio' | 'reposync' | 'folder' | 'readme';
   studioPresetText: string;
+  timestamp: string;
 }
 
 export default function App() {
@@ -26,6 +27,13 @@ export default function App() {
   const [inspectModal, setInspectModal] = useState<{ svgCode: string; name: string } | null>(null);
   const [studioPresetText, setStudioPresetText] = useState<string>('');
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isHighContrast, setIsHighContrast] = useState<boolean>(false);
+  const [zipProgress, setZipProgress] = useState<number | null>(null);
+
+  // Session activity timestamp
+  const [lastModifiedTimestamp, setLastModifiedTimestamp] = useState<string>(
+    new Date().toLocaleTimeString()
+  );
 
   // Undo / Redo State History Stack
   const [history, setHistory] = useState<AppStateSnapshot[]>([]);
@@ -34,7 +42,9 @@ export default function App() {
   const changeProfileWithHistory = useCallback((p: BrandProfile) => {
     setActiveProfile((prevProfile) => {
       if (prevProfile === p) return prevProfile;
-      setHistory((h) => [...h, { activeProfile: prevProfile, activeTab, studioPresetText }]);
+      const ts = new Date().toLocaleTimeString();
+      setLastModifiedTimestamp(ts);
+      setHistory((h) => [...h, { activeProfile: prevProfile, activeTab, studioPresetText, timestamp: ts }]);
       setRedoStack([]);
       return p;
     });
@@ -43,7 +53,9 @@ export default function App() {
   const changeTabWithHistory = useCallback((tab: 'gallery' | 'studio' | 'reposync' | 'folder' | 'readme') => {
     setActiveTab((prevTab) => {
       if (prevTab === tab) return prevTab;
-      setHistory((h) => [...h, { activeProfile, activeTab: prevTab, studioPresetText }]);
+      const ts = new Date().toLocaleTimeString();
+      setLastModifiedTimestamp(ts);
+      setHistory((h) => [...h, { activeProfile, activeTab: prevTab, studioPresetText, timestamp: ts }]);
       setRedoStack([]);
       return tab;
     });
@@ -54,15 +66,17 @@ export default function App() {
       if (prevHistory.length === 0) return prevHistory;
       const previous = prevHistory[prevHistory.length - 1];
       const newHistory = prevHistory.slice(0, prevHistory.length - 1);
+      const ts = new Date().toLocaleTimeString();
 
       setRedoStack((prevRedo) => [
         ...prevRedo,
-        { activeProfile, activeTab, studioPresetText },
+        { activeProfile, activeTab, studioPresetText, timestamp: ts },
       ]);
 
       setActiveProfile(previous.activeProfile);
       setActiveTab(previous.activeTab);
       setStudioPresetText(previous.studioPresetText);
+      setLastModifiedTimestamp(previous.timestamp || ts);
 
       return newHistory;
     });
@@ -73,19 +87,43 @@ export default function App() {
       if (prevRedo.length === 0) return prevRedo;
       const next = prevRedo[prevRedo.length - 1];
       const newRedo = prevRedo.slice(0, prevRedo.length - 1);
+      const ts = new Date().toLocaleTimeString();
 
       setHistory((prevHistory) => [
         ...prevHistory,
-        { activeProfile, activeTab, studioPresetText },
+        { activeProfile, activeTab, studioPresetText, timestamp: ts },
       ]);
 
       setActiveProfile(next.activeProfile);
       setActiveTab(next.activeTab);
       setStudioPresetText(next.studioPresetText);
+      setLastModifiedTimestamp(next.timestamp || ts);
 
       return newRedo;
     });
   }, [activeProfile, activeTab, studioPresetText]);
+
+  // Export Session Data Backup JSON
+  const handleExportSession = useCallback(() => {
+    const sessionPayload = {
+      app: 'LINACRE ASSET STUDIO',
+      exportedAt: new Date().toISOString(),
+      activeProfile,
+      activeTab,
+      studioPresetText,
+      lastModified: lastModifiedTimestamp,
+      undoHistoryCount: history.length,
+      isHighContrastMode: isHighContrast,
+    };
+
+    const blob = new Blob([JSON.stringify(sessionPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linacre_session_${activeProfile}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeProfile, activeTab, studioPresetText, lastModifiedTimestamp, history.length, isHighContrast]);
 
   // Global Keyboard Shortcuts (meta+1..5, Ctrl+Z, Ctrl+Y, ?, Esc, Cmd+K)
   useEffect(() => {
@@ -160,7 +198,9 @@ export default function App() {
   };
 
   const handleSendToStudio = (asset: AssetItem) => {
-    setHistory((h) => [...h, { activeProfile, activeTab, studioPresetText }]);
+    const ts = new Date().toLocaleTimeString();
+    setLastModifiedTimestamp(ts);
+    setHistory((h) => [...h, { activeProfile, activeTab, studioPresetText, timestamp: ts }]);
     setRedoStack([]);
     setStudioPresetText(asset.name.toUpperCase());
     setActiveTab('studio');
@@ -168,6 +208,7 @@ export default function App() {
 
   const handleDownloadAllZip = async () => {
     try {
+      setZipProgress(0);
       const zip = new JSZip();
       
       const addNodeToZip = (node: typeof INITIAL_FOLDER_STRUCTURE, currentPath: string) => {
@@ -185,20 +226,36 @@ export default function App() {
       addNodeToZip(INITIAL_FOLDER_STRUCTURE, '');
       zip.file('🎨_folder/README.md', generateReadmeBoilerplate(INITIAL_FOLDER_STRUCTURE));
 
-      const blob = await zip.generateAsync({ type: 'blob' });
+      const blob = await zip.generateAsync(
+        { type: 'blob' },
+        (metadata) => {
+          setZipProgress(Math.min(99, Math.floor(metadata.percent)));
+        }
+      );
+
+      setZipProgress(100);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `linacre_art_collection_${activeProfile}.zip`;
       a.click();
       URL.revokeObjectURL(url);
+
+      setTimeout(() => {
+        setZipProgress(null);
+      }, 1800);
     } catch (e) {
       console.error('Failed to create ZIP', e);
+      setZipProgress(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 selection:bg-red-500 selection:text-white font-sans antialiased">
+    <div className={`min-h-screen font-sans antialiased transition-colors ${
+      isHighContrast
+        ? 'bg-black text-white selection:bg-yellow-400 selection:text-black font-semibold'
+        : 'bg-gray-950 text-gray-100 selection:bg-red-500 selection:text-white'
+    }`}>
       {/* Header Navigation Bar */}
       <HeaderNav
         activeProfile={activeProfile}
@@ -213,7 +270,41 @@ export default function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onExportSession={handleExportSession}
+        isHighContrast={isHighContrast}
+        onToggleHighContrast={() => setIsHighContrast((prev) => !prev)}
+        lastModified={lastModifiedTimestamp}
       />
+
+      {/* Sub-Header Session Status Bar */}
+      <div className={`border-b text-xs font-mono py-1.5 px-4 sm:px-8 transition-colors ${
+        isHighContrast
+          ? 'bg-zinc-900 border-cyan-400 text-cyan-300 font-bold'
+          : 'bg-slate-900/60 border-slate-800/80 text-gray-400'
+      }`}>
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center space-x-4">
+            <span className="flex items-center gap-1.5 text-cyan-400">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Last modified: <strong className="text-gray-200">{lastModifiedTimestamp}</strong></span>
+            </span>
+            <span className="hidden sm:inline text-gray-600">|</span>
+            <span className="hidden sm:flex items-center gap-1 text-emerald-400">
+              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              <span>History stack: {history.length} snapshot{history.length === 1 ? '' : 's'} recorded</span>
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {isHighContrast && (
+              <span className="px-2 py-0.5 rounded bg-yellow-400 text-black font-extrabold text-[10px] tracking-wide">
+                ACCESSIBILITY: HIGH CONTRAST
+              </span>
+            )}
+            <span className="text-gray-500">Active Profile: <strong className="text-cyan-300">@{activeProfile}</strong></span>
+          </div>
+        </div>
+      </div>
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
@@ -257,6 +348,31 @@ export default function App() {
         )}
 
       </main>
+
+      {/* ZIP Generation Progress Toast Floating Notification */}
+      {zipProgress !== null && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-slate-900 border border-cyan-500/80 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl animate-fadeIn">
+          <div className="flex flex-col gap-1.5 w-72">
+            <div className="flex justify-between items-center text-xs font-mono font-bold">
+              <span className="text-cyan-300 flex items-center gap-1.5">
+                {zipProgress === 100 ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Download className="w-4 h-4 animate-bounce text-cyan-400" />
+                )}
+                <span>{zipProgress === 100 ? 'Archive Complete!' : 'Packaging 🎨_Folder ZIP...'}</span>
+              </span>
+              <span className="text-cyan-400">{zipProgress}%</span>
+            </div>
+            <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+              <div
+                className="bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 h-full transition-all duration-150 rounded-full"
+                style={{ width: `${zipProgress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Keyboard Shortcuts Trigger Pill in bottom right */}
       <div className="fixed bottom-6 right-6 z-40 hidden sm:block">
@@ -309,4 +425,5 @@ export default function App() {
     </div>
   );
 }
+
 

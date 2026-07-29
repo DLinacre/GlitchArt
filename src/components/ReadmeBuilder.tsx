@@ -42,14 +42,24 @@ All repositories owned by **${profile.name}** follow the official **Linacre \`�
 
 ---
 
+## 🚀 Linacre Studio Suite Capabilities
+
+- 🎨 **Global Brand Harmonizer**: Harmonizes brand design tokens (primary/accent colors, font stacks, and GlitchStudio prompts) into reusable Theme Presets.
+- ⚡ **GlitchStudio Art & WebAudio Synth**: Real-time vector SVG generator with ID3 v2.3 metadata audio tag injector and dynamic HTML5 Canvas audio spectrum visualizers (Equalizer Bars, Waveform Oscilloscope, Cyber Particle Pulse).
+- 📦 **Asset Gallery Batch Bundler**: Multi-selection checkboxes with customizable ZIP filename suffix (\`linacre_assets_*.zip\`) and quick PNG raster downloads.
+- 📊 **GitHub Contribution Heatmap**: Visual contribution activity grid tracking annual developer activity.
+- 🌿 **Git Release Pipeline & Branching**: Interactive branch manager with instant tag creation and 1-click ZIP release packaging.
+
+---
+
 ## 💻 Primary Tech Stack & Core Systems
 
 | Domain | Frameworks & Tools |
 | :--- | :--- |
 | **Languages** | TypeScript, Rust, C++, C#, HLSL, Python |
 | **Game Engines** | WebGL, Unity, Custom C++ Core |
-| **UI & Audio** | Cyber Glitch HUD, WebAudio Synth API, Vector SVG |
-| **Persistence** | Zero-Trust Encrypted Vault, Local State Sync |
+| **UI & Audio** | Cyber Glitch HUD, WebAudio Synth API, HTML5 Canvas Visualizer, Vector SVG |
+| **Persistence** | Zero-Trust Encrypted Vault, Reusable Brand Theme Presets |
 
 ---
 

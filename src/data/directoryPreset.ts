@@ -200,9 +200,9 @@ export const INITIAL_FOLDER_STRUCTURE: FolderNode = {
 export function generateReadmeBoilerplate(selectedTree: FolderNode): string {
   return `# [Project Name] - Linacre Repository
 
-## 🎨 Asset & Design Organization (Glitch Tech Schematic)
+## 🎨 Asset & Design Organization (\`🎨_folder\` Schematic)
 
-This repository follows the official \`🎨_folder\` layout for **Linacre Development [DLinacre // LIN4CRE]**.
+This repository follows the official \`🎨_folder\` layout for **Linacre Development [DLinacre // LIN4CRE]**, deployed via [linacre.site](https://linacre.site).
 All editable source files remain strictly separated from optimized runtime assets.
 
 \`\`\`text
@@ -225,7 +225,7 @@ All editable source files remain strictly separated from optimized runtime asset
 │   └── hud/                  # Head-Up Display elements.
 │
 ├── 📂_audio/                 # [SOUNDSCAPE] All audio assets.
-│   ├── raw_audio/            # Project files (e.g., Audacity, Ableton)
+│   ├── raw_audio/            # Project files (e.g., Audacity, Ableton, Logic Pro)
 │   ├── sfx/                  # .wav, .mp3 (Sound Effects, Glitch noise)
 │   └── music/                # .wav, .mp3 (Loops, Score)
 │
@@ -234,6 +234,16 @@ All editable source files remain strictly separated from optimized runtime asset
     ├── style_guide.md        # Color palettes, typography, and glitch rules.
     └── moodboard/            # Reference images and inspiration.
 \`\`\`
+
+---
+
+## 🚀 Key Suite Features
+
+- 🎨 **Global Brand Harmonizer**: Instant preset styling combining custom color tokens, font stacks (JetBrains Mono, Space Grotesk, Fira Code), and GlitchStudio prompts across \`@DLinacre\`, \`@LIN4CRE\`, and \`linacre.site\`.
+- ⚡ **GlitchStudio & ID3 Audio Synthesizer**: Vector SVG artwork generator with real-time WebAudio synth, ID3 metadata frame embedding (v2.3 standard), and real-time HTML5 Canvas spectrum visualizer (Bars, Waveform, Particle Pulse).
+- 📦 **Multi-Select Asset Batch Exporter**: Multi-select SVG/PNG asset checkbox toolbar with customizable ZIP filename suffix and single-click PNG raster rendering.
+- 📊 **GitHub Contribution Heatmap**: Interactive commit matrix dashboard tracking contribution frequency and activity metrics.
+- 🌿 **Git Branching Visualizer & Release Engine**: Multi-branch timeline (main, release, feature, hotfix) with 1-click commit tagging and ZIP release packager.
 
 ---
 

@@ -257,6 +257,29 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
   const [selectedAssetType, setSelectedAssetType] = useState<RepoAssetType>('banner');
   const [selectedThemeId, setSelectedThemeId] = useState<string>('cyber_cyan');
 
+  // Profile Theme Categories Filter State ('all' | 'Minimalist' | 'Technical' | 'Creative')
+  const [activeThemeCategory, setActiveThemeCategory] = useState<'all' | 'Minimalist' | 'Technical' | 'Creative'>('all');
+
+  // Filtered Theme Presets based on selected Category
+  const filteredThemePresets = PALETTE_THEMES.filter((theme) => {
+    if (activeThemeCategory === 'all') return true;
+    return theme.category === activeThemeCategory;
+  });
+
+  const handleSelectThemePreset = (themeId: string) => {
+    const theme = PALETTE_THEMES.find((t) => t.id === themeId);
+    if (!theme) return;
+
+    setSelectedThemeId(theme.id);
+    setEditorConfig((prev) => ({
+      ...prev,
+      primaryColor: theme.primary,
+      secondaryColor: theme.secondary,
+    }));
+    setToastMessage(`Applied ${theme.category} theme: ${theme.name}`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   // AI Option Variant Selection (0, 1, 2, 3)
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
   const [variationSeed, setVariationSeed] = useState<number>(101);
@@ -992,6 +1015,96 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
             </div>
           </div>
 
+          {/* Profile Themes & Preset Templates Hub with Filter Categories */}
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-gray-800">
+              <label className="text-xs font-mono font-bold text-gray-200 flex items-center gap-2">
+                <Palette className="w-4 h-4 text-cyan-400" />
+                <span>PROFILE THEME PRESETS</span>
+              </label>
+              <span className="text-[11px] font-mono text-gray-400">
+                Active: <strong className="text-cyan-300">{activePalette.name}</strong> ({activePalette.category})
+              </span>
+            </div>
+
+            {/* Filter Categories Tabs ('Minimalist', 'Technical', 'Creative') */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-gray-950 rounded-xl border border-gray-800">
+              {(['all', 'Minimalist', 'Technical', 'Creative'] as const).map((cat) => {
+                const isSelected = activeThemeCategory === cat;
+                const count = cat === 'all' ? PALETTE_THEMES.length : PALETTE_THEMES.filter(t => t.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setActiveThemeCategory(cat)}
+                    className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      isSelected
+                        ? 'bg-cyan-500 text-gray-950 shadow-md shadow-cyan-500/20'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-900'
+                    }`}
+                  >
+                    <span>{cat === 'all' ? 'All' : cat}</span>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-gray-950 text-cyan-300' : 'bg-gray-900 text-gray-400'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Category Preset Templates Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+              {filteredThemePresets.map((theme) => {
+                const isSelected = selectedThemeId === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => handleSelectThemePreset(theme.id)}
+                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-2 cursor-pointer ${
+                      isSelected
+                        ? 'bg-gray-800 border-cyan-400 ring-1 ring-cyan-400 shadow-md shadow-cyan-500/10'
+                        : 'bg-gray-950 border-gray-800 hover:border-gray-700 hover:bg-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-gray-200 flex items-center gap-1.5">
+                        <span
+                          className="w-3 h-3 rounded-full border border-white/20 shadow-sm shrink-0"
+                          style={{ backgroundColor: theme.primary }}
+                        />
+                        <span className="truncate">{theme.name}</span>
+                      </span>
+
+                      <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeText}`}>
+                        {theme.category}
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-gray-400 line-clamp-2">{theme.description}</p>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-800/60">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.primary }} title={`Primary: ${theme.primary}`} />
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.secondary }} title={`Secondary: ${theme.secondary}`} />
+                      </div>
+
+                      {isSelected ? (
+                        <span className="text-[9px] font-mono font-bold text-emerald-400 flex items-center gap-0.5">
+                          <Check className="w-3 h-3" /> ACTIVE
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono text-gray-500 hover:text-cyan-300">
+                          Apply Theme →
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Supported Asset Types Grid */}
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
             <label className="block text-xs font-mono font-bold text-gray-300 flex items-center gap-2">
@@ -1235,15 +1348,15 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
 
                 {/* Color Palette Selector */}
                 <div>
-                  <div className="text-[11px] font-mono text-gray-400 mb-1">Color Palette:</div>
+                  <div className="text-[11px] font-mono text-gray-400 mb-1">Color Palette Preset:</div>
                   <select
                     value={selectedThemeId}
-                    onChange={(e) => setSelectedThemeId(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1 text-xs font-mono text-white"
+                    onChange={(e) => handleSelectThemePreset(e.target.value)}
+                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1 text-xs font-mono text-white cursor-pointer"
                   >
                     {PALETTE_THEMES.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.name}
+                        [{t.category}] {t.name}
                       </option>
                     ))}
                   </select>

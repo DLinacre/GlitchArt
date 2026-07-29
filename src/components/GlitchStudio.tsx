@@ -26,8 +26,11 @@ import {
   VolumeX,
   Dices,
   Play,
+  Pause,
   Square,
   Radio,
+  Headphones,
+  Disc,
 } from 'lucide-react';
 import {
   ThemeTunePlayer,
@@ -45,6 +48,7 @@ interface GlitchStudioProps {
 export interface ColorPalettePreset {
   id: string;
   name: string;
+  category: 'Minimalist' | 'Technical' | 'Creative';
   primary: string;
   secondary: string;
   description: string;
@@ -126,12 +130,72 @@ export const SAMPLE_REPOS_CONTEXT: RepoContextPreset[] = [
 ];
 
 export const PALETTE_THEMES: ColorPalettePreset[] = [
+  // Minimalist Category
+  {
+    id: 'stealth_white',
+    name: 'Stealth-White',
+    category: 'Minimalist',
+    primary: '#FFFFFF',
+    secondary: '#00F0FF',
+    description: 'Monochrome Cyber & Crisp Ice Accent',
+    badgeBg: 'bg-slate-900',
+    badgeBorder: 'border-slate-400/50',
+    badgeText: 'text-slate-200',
+    glowClass: 'shadow-[0_0_30px_rgba(255,255,255,0.15)]',
+    previewCardBorder: 'border-slate-400/40',
+    previewCardBg: 'bg-slate-950/20',
+  },
+  {
+    id: 'nordic_slate',
+    name: 'Nordic-Slate',
+    category: 'Minimalist',
+    primary: '#38BDF8',
+    secondary: '#94A3B8',
+    description: 'Slate Gray & Cool Frost Blue',
+    badgeBg: 'bg-sky-950/60',
+    badgeBorder: 'border-sky-500/50',
+    badgeText: 'text-sky-300',
+    glowClass: 'shadow-[0_0_30px_rgba(56,189,248,0.15)]',
+    previewCardBorder: 'border-sky-500/40',
+    previewCardBg: 'bg-sky-950/15',
+  },
+  {
+    id: 'zen_vector',
+    name: 'Zen-Vector',
+    category: 'Minimalist',
+    primary: '#F8FAFC',
+    secondary: '#64748B',
+    description: 'Stark High Contrast Geometric Monochrome',
+    badgeBg: 'bg-slate-900',
+    badgeBorder: 'border-slate-600/50',
+    badgeText: 'text-slate-100',
+    glowClass: 'shadow-[0_0_30px_rgba(248,250,252,0.12)]',
+    previewCardBorder: 'border-slate-500/40',
+    previewCardBg: 'bg-slate-900/40',
+  },
+  {
+    id: 'clean_architect',
+    name: 'Clean-Architect',
+    category: 'Minimalist',
+    primary: '#22D3EE',
+    secondary: '#CBD5E1',
+    description: 'Steel Cyan & Understated Architectural Lines',
+    badgeBg: 'bg-cyan-950/60',
+    badgeBorder: 'border-cyan-600/40',
+    badgeText: 'text-cyan-200',
+    glowClass: 'shadow-[0_0_25px_rgba(34,211,238,0.12)]',
+    previewCardBorder: 'border-cyan-600/30',
+    previewCardBg: 'bg-cyan-950/20',
+  },
+
+  // Technical Category
   {
     id: 'cyber_cyan',
     name: 'Cyber-Cyan',
+    category: 'Technical',
     primary: '#00F0FF',
     secondary: '#FF0055',
-    description: 'Neon Cyan & Glitch Crimson',
+    description: 'Neon Cyan & Glitch Crimson HUD',
     badgeBg: 'bg-cyan-950/60',
     badgeBorder: 'border-cyan-500/50',
     badgeText: 'text-cyan-300',
@@ -140,24 +204,12 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
     previewCardBg: 'bg-cyan-950/15',
   },
   {
-    id: 'volcanic_red',
-    name: 'Volcanic-Red',
-    primary: '#FF0055',
-    secondary: '#FF5500',
-    description: 'Magma Crimson & Flaming Orange',
-    badgeBg: 'bg-red-950/60',
-    badgeBorder: 'border-red-500/50',
-    badgeText: 'text-red-300',
-    glowClass: 'shadow-[0_0_30px_rgba(255,0,85,0.15)]',
-    previewCardBorder: 'border-red-500/40',
-    previewCardBg: 'bg-red-950/15',
-  },
-  {
     id: 'matrix_green',
     name: 'Matrix-Green',
+    category: 'Technical',
     primary: '#00FF66',
     secondary: '#00F0FF',
-    description: 'Terminal Hacker Green & Tech Cyan',
+    description: 'Terminal Hacker Green & Tech Cyan CLI',
     badgeBg: 'bg-emerald-950/60',
     badgeBorder: 'border-emerald-500/50',
     badgeText: 'text-emerald-300',
@@ -166,11 +218,42 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
     previewCardBg: 'bg-emerald-950/15',
   },
   {
+    id: 'rust_vault',
+    name: 'Rust-Vault',
+    category: 'Technical',
+    primary: '#F59E0B',
+    secondary: '#EF4444',
+    description: 'Zero-Trust Encrypted Amber & Vault Crimson',
+    badgeBg: 'bg-amber-950/60',
+    badgeBorder: 'border-amber-500/50',
+    badgeText: 'text-amber-300',
+    glowClass: 'shadow-[0_0_30px_rgba(245,158,11,0.15)]',
+    previewCardBorder: 'border-amber-500/40',
+    previewCardBg: 'bg-amber-950/15',
+  },
+  {
+    id: 'blueprint_cad',
+    name: 'Blueprint-CAD',
+    category: 'Technical',
+    primary: '#60A5FA',
+    secondary: '#38BDF8',
+    description: 'Industrial CAD Grid & Technical Blueprints',
+    badgeBg: 'bg-blue-950/70',
+    badgeBorder: 'border-blue-400/50',
+    badgeText: 'text-blue-200',
+    glowClass: 'shadow-[0_0_30px_rgba(96,165,250,0.15)]',
+    previewCardBorder: 'border-blue-500/40',
+    previewCardBg: 'bg-blue-950/20',
+  },
+
+  // Creative Category
+  {
     id: 'synth_purple',
     name: 'Synth-Purple',
+    category: 'Creative',
     primary: '#B000FF',
     secondary: '#FF0055',
-    description: 'Vaporwave Violet & Hot Pink',
+    description: 'Vaporwave Violet & Hot Neon Pink',
     badgeBg: 'bg-purple-950/60',
     badgeBorder: 'border-purple-500/50',
     badgeText: 'text-purple-300',
@@ -179,8 +262,23 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
     previewCardBg: 'bg-purple-950/15',
   },
   {
+    id: 'volcanic_red',
+    name: 'Volcanic-Red',
+    category: 'Creative',
+    primary: '#FF0055',
+    secondary: '#FF5500',
+    description: 'Magma Crimson & Flaming Cyber Orange',
+    badgeBg: 'bg-red-950/60',
+    badgeBorder: 'border-red-500/50',
+    badgeText: 'text-red-300',
+    glowClass: 'shadow-[0_0_30px_rgba(255,0,85,0.15)]',
+    previewCardBorder: 'border-red-500/40',
+    previewCardBg: 'bg-red-950/15',
+  },
+  {
     id: 'electric_gold',
     name: 'Electric-Gold',
+    category: 'Creative',
     primary: '#FFCC00',
     secondary: '#FF0055',
     description: 'High Voltage Yellow & Laser Crimson',
@@ -194,9 +292,10 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
   {
     id: 'toxic_lime',
     name: 'Toxic-Lime',
+    category: 'Creative',
     primary: '#CCFF00',
     secondary: '#9900FF',
-    description: 'Biohazard Lime & Electric Violet',
+    description: 'Biohazard Lime & Electric Violet Synth',
     badgeBg: 'bg-lime-950/60',
     badgeBorder: 'border-lime-500/50',
     badgeText: 'text-lime-300',
@@ -207,6 +306,7 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
   {
     id: 'ultra_blue',
     name: 'Ultra-Blue',
+    category: 'Creative',
     primary: '#0099FF',
     secondary: '#00FF66',
     description: 'Deep Cyber Blue & Quantum Green',
@@ -216,19 +316,6 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
     glowClass: 'shadow-[0_0_30px_rgba(0,153,255,0.15)]',
     previewCardBorder: 'border-blue-500/40',
     previewCardBg: 'bg-blue-950/15',
-  },
-  {
-    id: 'stealth_white',
-    name: 'Stealth-White',
-    primary: '#FFFFFF',
-    secondary: '#00F0FF',
-    description: 'Monochrome Cyber & Ice Accent',
-    badgeBg: 'bg-slate-900',
-    badgeBorder: 'border-slate-400/50',
-    badgeText: 'text-slate-200',
-    glowClass: 'shadow-[0_0_30px_rgba(255,255,255,0.15)]',
-    previewCardBorder: 'border-slate-400/40',
-    previewCardBg: 'bg-slate-950/20',
   },
 ];
 
@@ -318,6 +405,114 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
     setRefineInstruction(freshPrompt);
     setPromptFlashed(true);
     setTimeout(() => setPromptFlashed(false), 800);
+  };
+
+  // Gemini Audio Generation & HTML5 Audio Player State
+  interface GeneratedAudioTrack {
+    trackTitle: string;
+    genre: string;
+    bpm: number;
+    description: string;
+    voiceName: string;
+    audioUrl: string;
+  }
+
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [generatedAudioTrack, setGeneratedAudioTrack] = useState<GeneratedAudioTrack | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
+
+  // HTML5 Audio Player State
+  const html5AudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingGeneratedAudio, setIsPlayingGeneratedAudio] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioVolume, setAudioVolume] = useState(0.8);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+
+  const handleGenerateAudio = async () => {
+    setIsGeneratingAudio(true);
+    setAudioError(null);
+    try {
+      const response = await fetch('/api/gemini/generate-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          themeId: selectedThemeId,
+          themeName: activePalette.name,
+          repoName: selectedRepoId === 'custom' ? customRepo.name : activeProfile.handle,
+          promptNote: refineInstruction,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to generate theme audio track.');
+      }
+
+      const data = await response.json();
+      setGeneratedAudioTrack(data);
+      setIsPlayingGeneratedAudio(false);
+
+      // Stop loop synth if running to avoid audio clutter
+      if (playerRef.current && isPlayingTune) {
+        playerRef.current.stop();
+        setIsPlayingTune(false);
+      }
+    } catch (err: any) {
+      console.error('Audio Generation Error:', err);
+      setAudioError(err.message || 'Error triggering Gemini API for audio generation.');
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
+  const handleToggleGeneratedAudioPlay = () => {
+    if (!html5AudioRef.current) return;
+    if (isPlayingGeneratedAudio) {
+      html5AudioRef.current.pause();
+      setIsPlayingGeneratedAudio(false);
+    } else {
+      html5AudioRef.current.play().then(() => {
+        setIsPlayingGeneratedAudio(true);
+      }).catch(err => console.error("Audio play error:", err));
+    }
+  };
+
+  const handleAudioTimeUpdate = () => {
+    if (html5AudioRef.current) {
+      setAudioCurrentTime(html5AudioRef.current.currentTime);
+      setAudioDuration(html5AudioRef.current.duration || 0);
+    }
+  };
+
+  const handleAudioSeek = (newTime: number) => {
+    if (html5AudioRef.current) {
+      html5AudioRef.current.currentTime = newTime;
+      setAudioCurrentTime(newTime);
+    }
+  };
+
+  const handleVolumeChange = (vol: number) => {
+    setAudioVolume(vol);
+    if (html5AudioRef.current) {
+      html5AudioRef.current.volume = vol;
+      html5AudioRef.current.muted = vol === 0;
+      setIsAudioMuted(vol === 0);
+    }
+  };
+
+  const handleToggleAudioMute = () => {
+    if (!html5AudioRef.current) return;
+    const newMute = !isAudioMuted;
+    setIsAudioMuted(newMute);
+    html5AudioRef.current.muted = newMute;
+  };
+
+  const formatTime = (timeInSec: number) => {
+    if (isNaN(timeInSec) || !isFinite(timeInSec)) return '0:00';
+    const mins = Math.floor(timeInSec / 60);
+    const secs = Math.floor(timeInSec % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   // Active theme preset object
@@ -1017,72 +1212,226 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
             </div>
           </div>
 
-          {/* Cyberpunk Theme Tunes Audio Synthesizer Bar */}
-          <div className="p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 border border-gray-800 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-            <div className="flex items-center gap-2">
+          {/* Cyberpunk Theme Tunes Audio Synthesizer & Gemini AI Theme Audio Generator */}
+          <div className="p-3.5 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 border border-gray-800 rounded-2xl space-y-3 font-mono text-xs shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleTune}
+                  className={`p-2 rounded-xl border font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isPlayingTune
+                      ? 'bg-cyan-500 text-gray-950 border-cyan-400 shadow-md shadow-cyan-500/30'
+                      : 'bg-gray-900 text-cyan-400 border-cyan-500/40 hover:bg-cyan-950'
+                  }`}
+                  title={isPlayingTune ? 'Pause Theme Tune' : 'Play Theme Tune Synth'}
+                >
+                  {isPlayingTune ? (
+                    <>
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span>PAUSE SYNTH LOOP</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>PLAY SYNTH LOOP</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Animated Frequency Equalizer when playing loop */}
+                {isPlayingTune && (
+                  <div className="flex items-end gap-0.5 h-4 px-1">
+                    <span className="w-1 bg-cyan-400 rounded-full animate-bounce h-2"></span>
+                    <span className="w-1 bg-cyan-300 rounded-full animate-bounce h-4 [animation-delay:0.1s]"></span>
+                    <span className="w-1 bg-blue-400 rounded-full animate-bounce h-3 [animation-delay:0.2s]"></span>
+                    <span className="w-1 bg-purple-400 rounded-full animate-bounce h-4 [animation-delay:0.15s]"></span>
+                  </div>
+                )}
+              </div>
+
+              {/* Track Selector */}
+              <div className="flex items-center gap-2 flex-1 max-w-xs min-w-[180px]">
+                <Music className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <select
+                  value={selectedTrackId}
+                  onChange={(e) => handleSelectTrack(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-800 text-cyan-300 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:border-cyan-500 cursor-pointer"
+                >
+                  {THEME_TUNE_TRACKS.map((t) => (
+                    <option key={t.id} value={t.id} className="bg-gray-950 text-gray-200">
+                      🎵 {t.name} ({t.genre})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Gemini Audio Generation Button */}
               <button
                 type="button"
-                onClick={handleToggleTune}
-                className={`p-2 rounded-lg border font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isPlayingTune
-                    ? 'bg-cyan-500 text-gray-950 border-cyan-400 shadow-md shadow-cyan-500/30'
-                    : 'bg-gray-900 text-cyan-400 border-cyan-500/40 hover:bg-cyan-950'
-                }`}
-                title={isPlayingTune ? 'Pause Theme Tune' : 'Play Theme Tune Synth'}
+                onClick={handleGenerateAudio}
+                disabled={isGeneratingAudio}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer border border-purple-400/30"
+                title="Generate custom Glitch-Tech theme audio track using Gemini API"
               >
-                {isPlayingTune ? (
+                {isGeneratingAudio ? (
                   <>
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>PAUSE TUNE</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-200" />
+                    <span>SYNTHESIZING AUDIO...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>PLAY THEME TUNE</span>
+                    <Headphones className="w-3.5 h-3.5 text-yellow-300" />
+                    <span>GENERATE THEME AUDIO (GEMINI API)</span>
                   </>
                 )}
               </button>
 
-              {/* Animated Frequency Equalizer when playing */}
-              {isPlayingTune && (
-                <div className="flex items-end gap-0.5 h-4 px-1">
-                  <span className="w-1 bg-cyan-400 rounded-full animate-bounce h-2"></span>
-                  <span className="w-1 bg-cyan-300 rounded-full animate-bounce h-4 [animation-delay:0.1s]"></span>
-                  <span className="w-1 bg-blue-400 rounded-full animate-bounce h-3 [animation-delay:0.2s]"></span>
-                  <span className="w-1 bg-purple-400 rounded-full animate-bounce h-4 [animation-delay:0.15s]"></span>
-                </div>
-              )}
-            </div>
-
-            {/* Track Selector */}
-            <div className="flex items-center gap-2 flex-1 max-w-xs min-w-[200px]">
-              <Music className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <select
-                value={selectedTrackId}
-                onChange={(e) => handleSelectTrack(e.target.value)}
-                className="w-full bg-gray-950 border border-gray-800 text-cyan-300 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:border-cyan-500 cursor-pointer"
+              {/* Mute toggle */}
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                className={`p-1.5 rounded-lg border transition-all ${
+                  isMuted
+                    ? 'bg-red-950/60 border-red-500/50 text-red-300'
+                    : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+                }`}
+                title={isMuted ? 'Unmute' : 'Mute'}
               >
-                {THEME_TUNE_TRACKS.map((t) => (
-                  <option key={t.id} value={t.id} className="bg-gray-950 text-gray-200">
-                    🎵 {t.name} ({t.genre})
-                  </option>
-                ))}
-              </select>
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
             </div>
 
-            {/* Mute toggle */}
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              className={`p-1.5 rounded-lg border transition-all ${
-                isMuted
-                  ? 'bg-red-950/60 border-red-500/50 text-red-300'
-                  : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
-              }`}
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
+            {/* Error banner if audio generation failed */}
+            {audioError && (
+              <div className="p-2 bg-red-950/70 border border-red-500/50 rounded-xl text-[11px] text-red-300">
+                ⚠️ Audio Generation Error: {audioError}
+              </div>
+            )}
+
+            {/* Gemini Generated HTML5 Audio Player Card */}
+            {generatedAudioTrack && (
+              <div className="p-3 bg-gray-950/90 border border-cyan-500/40 rounded-xl space-y-2.5 shadow-inner relative overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Disc className={`w-4 h-4 text-cyan-400 ${isPlayingGeneratedAudio ? 'animate-spin' : ''}`} />
+                    <span className="font-bold text-cyan-200 text-xs">{generatedAudioTrack.trackTitle}</span>
+                    <span className="px-2 py-0.5 bg-cyan-950 border border-cyan-500/40 text-cyan-300 text-[10px] rounded-full">
+                      {generatedAudioTrack.genre}
+                    </span>
+                    <span className="px-2 py-0.5 bg-purple-950 border border-purple-500/40 text-purple-300 text-[10px] rounded-full">
+                      {generatedAudioTrack.bpm} BPM
+                    </span>
+                    <span className="px-2 py-0.5 bg-yellow-950 border border-yellow-500/40 text-yellow-300 text-[10px] rounded-full">
+                      Voice: {generatedAudioTrack.voiceName}
+                    </span>
+                  </div>
+
+                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-yellow-400" />
+                    <span>Gemini Glitch-Tech Audio</span>
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-gray-400 italic">
+                  "{generatedAudioTrack.description}"
+                </p>
+
+                {/* HTML5 Audio element with refs */}
+                <audio
+                  ref={html5AudioRef}
+                  src={generatedAudioTrack.audioUrl}
+                  onTimeUpdate={handleAudioTimeUpdate}
+                  onLoadedMetadata={handleAudioTimeUpdate}
+                  onEnded={() => setIsPlayingGeneratedAudio(false)}
+                />
+
+                {/* HTML5 Audio Custom Player Controls */}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {/* Play / Pause Toggle */}
+                  <button
+                    type="button"
+                    onClick={handleToggleGeneratedAudioPlay}
+                    className="p-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-cyan-500/30"
+                  >
+                    {isPlayingGeneratedAudio ? (
+                      <>
+                        <Pause className="w-4 h-4 fill-current" />
+                        <span className="text-xs font-bold">PAUSE</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 fill-current" />
+                        <span className="text-xs font-bold">PLAY TRACK</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Waveform Equalizer visualizer when track is playing */}
+                  {isPlayingGeneratedAudio && (
+                    <div className="flex items-end gap-1 h-5 px-1">
+                      <span className="w-1 bg-cyan-400 rounded-full animate-pulse h-3"></span>
+                      <span className="w-1 bg-cyan-300 rounded-full animate-bounce h-5 [animation-delay:0.1s]"></span>
+                      <span className="w-1 bg-blue-400 rounded-full animate-bounce h-4 [animation-delay:0.2s]"></span>
+                      <span className="w-1 bg-purple-400 rounded-full animate-bounce h-5 [animation-delay:0.15s]"></span>
+                      <span className="w-1 bg-pink-400 rounded-full animate-pulse h-3 [animation-delay:0.25s]"></span>
+                    </div>
+                  )}
+
+                  {/* Timeline Seek Slider */}
+                  <div className="flex-1 flex items-center gap-2 min-w-[150px]">
+                    <span className="text-[10px] text-gray-400 font-mono w-8 text-right">
+                      {formatTime(audioCurrentTime)}
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={audioDuration || 1}
+                      step={0.1}
+                      value={audioCurrentTime}
+                      onChange={(e) => handleAudioSeek(parseFloat(e.target.value))}
+                      className="w-full accent-cyan-400 h-1.5 bg-gray-800 rounded-lg cursor-pointer"
+                    />
+                    <span className="text-[10px] text-gray-400 font-mono w-8">
+                      {formatTime(audioDuration)}
+                    </span>
+                  </div>
+
+                  {/* Volume Control */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleToggleAudioMute}
+                      className="text-gray-400 hover:text-cyan-300 p-1"
+                      title={isAudioMuted ? 'Unmute' : 'Mute'}
+                    >
+                      {isAudioMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={isAudioMuted ? 0 : audioVolume}
+                      onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                      className="w-16 accent-cyan-400 h-1.5 bg-gray-800 rounded-lg cursor-pointer"
+                      title={`Volume: ${Math.round((isAudioMuted ? 0 : audioVolume) * 100)}%`}
+                    />
+                  </div>
+
+                  {/* Download WAV File Button */}
+                  <a
+                    href={generatedAudioTrack.audioUrl}
+                    download={`${generatedAudioTrack.trackTitle.replace(/\s+/g, '_')}_gemini.wav`}
+                    className="p-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white rounded-lg flex items-center gap-1 text-[11px] transition-all cursor-pointer ml-auto"
+                    title="Download Glitch Audio WAV File"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Download WAV</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SVG Preview Container dynamically styled with palette classes & animated glitch keyframe effects */}

@@ -1,10 +1,29 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Helper to construct WAV header for raw 24kHz 16-bit mono PCM audio from Gemini TTS
+function createWavBuffer(pcmData: Buffer, sampleRate = 24000): Buffer {
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + pcmData.length, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16); // Subchunk1Size
+  header.writeUInt16LE(1, 20); // AudioFormat (1 = PCM)
+  header.writeUInt16LE(1, 22); // NumChannels (1 = mono)
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28); // ByteRate (sampleRate * 1 * 16/8)
+  header.writeUInt16LE(2, 32); // BlockAlign (1 * 16/8)
+  header.writeUInt16LE(16, 34); // BitsPerSample
+  header.write("data", 36);
+  header.writeUInt32LE(pcmData.length, 40);
+  return Buffer.concat([header, pcmData]);
+}
 
 async function startServer() {
   const app = express();
@@ -98,6 +117,99 @@ For each variation suggest:
       console.error("Error in /api/gemini/generate-suggestions:", error);
       res.status(500).json({
         error: error.message || "Failed to generate AI suggestions",
+      });
+    }
+  });
+
+  // Endpoint to generate Glitch-Tech theme audio track using Gemini API
+  app.post("/api/gemini/generate-audio", async (req, res) => {
+    try {
+      const { themeId, themeName, repoName, promptNote } = req.body;
+      const ai = getGeminiClient();
+
+      // First, get track metadata & sound design script from Gemini
+      const metaPrompt = `You are a synthwave and darksynth sound designer creating a short Glitch-Tech sound effect or background audio track for a cyberpunk UI theme named "${themeName || "Cyber Cyan"}" for repository "${repoName || "GlitchStudio"}".
+${promptNote ? `User Directive: ${promptNote}` : ""}
+
+Provide a track title, genre (e.g. Cyberpunk Synth, Glitch Hop, Dark Synthwave, Industrial Glitch), BPM (e.g. 128), voice style name, and a sound script for Gemini TTS audio synthesis.
+The sound script should feature high-tech robotic/cyber synth modulations, rhythmic binary counts, glitch sound effects, and sub-bass frequencies.`;
+
+      const metaResponse = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: metaPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              trackTitle: { type: Type.STRING },
+              genre: { type: Type.STRING },
+              bpm: { type: Type.NUMBER },
+              soundScript: { type: Type.STRING },
+              voiceName: { type: Type.STRING, description: "One of: Fenrir, Zephyr, Kore, Puck, Charon" },
+              description: { type: Type.STRING },
+            },
+            required: ["trackTitle", "genre", "bpm", "soundScript", "voiceName", "description"],
+          },
+        },
+      });
+
+      let trackInfo = {
+        trackTitle: `${themeName || "Cyber"} Glitch Sequence`,
+        genre: "Cyberpunk Glitch",
+        bpm: 128,
+        soundScript: `Glitch sequence initialized for ${themeName || "Cyber"}. System operational. Binary sync active: 1 0 1 0... Glitch modulation active!`,
+        voiceName: "Fenrir",
+        description: `Glitch-tech synth audio designed for ${themeName || "Cyber"} theme.`,
+      };
+
+      try {
+        if (metaResponse.text) {
+          trackInfo = { ...trackInfo, ...JSON.parse(metaResponse.text) };
+        }
+      } catch (e) {
+        console.warn("Could not parse metadata JSON, using defaults.");
+      }
+
+      // Generate audio using gemini-3.1-flash-tts-preview
+      const voices = ["Fenrir", "Zephyr", "Kore", "Puck", "Charon"];
+      const selectedVoice = voices.includes(trackInfo.voiceName) ? trackInfo.voiceName : "Fenrir";
+
+      const audioResponse = await ai.models.generateContent({
+        model: "gemini-3.1-flash-tts-preview",
+        contents: [{ parts: [{ text: `Perform in a rhythmic, low-latency glitch synth style with cyber robotic cadence: ${trackInfo.soundScript}` }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: selectedVoice },
+            },
+          },
+        },
+      });
+
+      const base64Pcm = audioResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+      if (!base64Pcm) {
+        throw new Error("No audio data returned from Gemini TTS model.");
+      }
+
+      const pcmBuffer = Buffer.from(base64Pcm, "base64");
+      const wavBuffer = createWavBuffer(pcmBuffer, 24000);
+      const audioDataUrl = `data:audio/wav;base64,${wavBuffer.toString("base64")}`;
+
+      res.json({
+        trackTitle: trackInfo.trackTitle,
+        genre: trackInfo.genre,
+        bpm: trackInfo.bpm,
+        description: trackInfo.description,
+        voiceName: selectedVoice,
+        audioUrl: audioDataUrl,
+      });
+    } catch (error: any) {
+      console.error("Error in /api/gemini/generate-audio:", error);
+      res.status(500).json({
+        error: error.message || "Failed to generate theme audio track.",
       });
     }
   });

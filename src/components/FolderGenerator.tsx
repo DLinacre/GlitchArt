@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FolderNode, BrandProfile } from '../types';
 import { INITIAL_FOLDER_STRUCTURE, generateReadmeBoilerplate, generateShellScript, generatePowerShellScript } from '../data/directoryPreset';
+import { GitBranchingPanel } from './GitBranchingPanel';
+import { FolderNodeGraph } from './FolderNodeGraph';
 import JSZip from 'jszip';
 import {
   FolderTree,
@@ -32,7 +34,9 @@ import {
   Archive,
   File,
   GripVertical,
-  Printer
+  Printer,
+  GitBranch,
+  Network
 } from 'lucide-react';
 
 interface FolderGeneratorProps {
@@ -1200,6 +1204,24 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
         </div>
 
       </div>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* SECTION 3: GIT COMMIT HISTORY & BRANCHING SIMULATION                */}
+      {/* ------------------------------------------------------------------- */}
+      <GitBranchingPanel
+        currentTree={tree}
+        onRestoreTreeSnapshot={(snapshot, msg) => {
+          setTree(snapshot);
+          setRenameSuccessMsg(`Restored tree state from commit: "${msg}"`);
+          setTimeout(() => setRenameSuccessMsg(null), 3000);
+        }}
+        activeProfile={activeProfile}
+      />
+
+      {/* ------------------------------------------------------------------- */}
+      {/* SECTION 4: INTERACTIVE D3 NODE GRAPH VISUALIZER                     */}
+      {/* ------------------------------------------------------------------- */}
+      <FolderNodeGraph tree={tree} />
 
       {/* ------------------------------------------------------------------- */}
       {/* MAIN CONTENT GRID: Interactive Tree View on Left, Scripts on Right  */}

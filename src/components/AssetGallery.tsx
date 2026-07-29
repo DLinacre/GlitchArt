@@ -285,8 +285,29 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
                 {itemsToDisplay.map((asset) => (
                   <div
                     key={asset.id}
-                    className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-2xl overflow-hidden shadow-xl transition-all hover:shadow-2xl hover:shadow-cyan-500/10 flex flex-col justify-between group"
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(
+                        'application/json',
+                        JSON.stringify({
+                          type: 'gallery_asset',
+                          assetName: asset.name,
+                          svgCode: asset.svgCode,
+                          description: asset.description,
+                        })
+                      );
+                      e.dataTransfer.setData('text/plain', asset.name);
+                    }}
+                    className="bg-gray-900 border border-gray-800 hover:border-cyan-500/50 rounded-2xl overflow-hidden shadow-xl transition-all hover:shadow-2xl hover:shadow-cyan-500/10 flex flex-col justify-between group cursor-grab active:cursor-grabbing relative"
                   >
+                    {/* Drag Badge Indicator */}
+                    <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="px-2 py-1 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 text-[10px] font-mono font-bold flex items-center gap-1 shadow-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                        <span>Drag to 🎨_folder</span>
+                      </span>
+                    </div>
+
                     {/* SVG Preview Box */}
                     <div className="relative w-full h-48 bg-gray-950 p-4 flex items-center justify-center overflow-hidden border-b border-gray-800/80">
                       <div

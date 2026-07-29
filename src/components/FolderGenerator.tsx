@@ -727,8 +727,57 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
           onDrop={(e) => {
             e.preventDefault();
             e.stopPropagation();
+
+            // Internal node re-ordering
             if (draggedNodeId) {
               handleDropNode(draggedNodeId, node.id);
+              return;
+            }
+
+            // External AssetGallery asset drop
+            const rawJson = e.dataTransfer.getData('application/json');
+            if (rawJson) {
+              try {
+                const payload = JSON.parse(rawJson);
+                if (payload.type === 'gallery_asset' || payload.assetName) {
+                  const cleanFileName = `${payload.assetName.toLowerCase().replace(/[^a-z0-9-_]/g, '_')}.svg`;
+                  const newFileNode: FolderNode = {
+                    id: `asset_drop_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                    name: cleanFileName,
+                    type: 'file',
+                    purpose: payload.description || 'Dropped vector asset from Asset Gallery',
+                    content: payload.svgCode,
+                    selected: true,
+                  };
+
+                  const insertIntoNode = (targetNode: FolderNode): FolderNode => {
+                    if (targetNode.id === node.id) {
+                      if (targetNode.type === 'folder') {
+                        return {
+                          ...targetNode,
+                          children: [...(targetNode.children || []), newFileNode],
+                        };
+                      }
+                    }
+                    if (targetNode.children) {
+                      return {
+                        ...targetNode,
+                        children: targetNode.children.map(insertIntoNode),
+                      };
+                    }
+                    return targetNode;
+                  };
+
+                  const updated = insertIntoNode(tree);
+                  setTree(updated);
+                  setRenameSuccessMsg(`Imported asset "${cleanFileName}" into "${node.name}"!`);
+                  setTimeout(() => setRenameSuccessMsg(null), 3500);
+                  setDragOverNodeId(null);
+                  return;
+                }
+              } catch (err) {
+                console.error("Failed to parse dropped asset data:", err);
+              }
             }
           }}
           className={`flex items-center gap-2 py-1.5 px-2 rounded-lg group transition-all ${

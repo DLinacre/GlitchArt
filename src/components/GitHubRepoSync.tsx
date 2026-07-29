@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GitHubContributionDashboard } from './GitHubContributionDashboard';
 import {
   RepoItem,
   RepoAssetType,
@@ -904,6 +905,9 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
           </button>
         </div>
       </div>
+
+      {/* GitHub Contribution Graph & Star Count Dashboard Widget */}
+      <GitHubContributionDashboard accounts={accounts} repos={repos} />
 
       {/* Main 2-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

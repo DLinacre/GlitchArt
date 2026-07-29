@@ -257,8 +257,8 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
   const [selectedAssetType, setSelectedAssetType] = useState<RepoAssetType>('banner');
   const [selectedThemeId, setSelectedThemeId] = useState<string>('cyber_cyan');
 
-  // Profile Theme Categories Filter State ('all' | 'Minimalist' | 'Technical' | 'Creative')
-  const [activeThemeCategory, setActiveThemeCategory] = useState<'all' | 'Minimalist' | 'Technical' | 'Creative'>('all');
+  // Profile Theme Categories Filter State ('all' | 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative')
+  const [activeThemeCategory, setActiveThemeCategory] = useState<'all' | 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative'>('all');
 
   // Filtered Theme Presets based on selected Category
   const filteredThemePresets = PALETTE_THEMES.filter((theme) => {
@@ -1027,9 +1027,9 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
               </span>
             </div>
 
-            {/* Filter Categories Tabs ('Minimalist', 'Technical', 'Creative') */}
+            {/* Filter Categories Tabs ('Apple Glass', 'Minimalist', 'Technical', 'Creative') */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 bg-gray-950 rounded-xl border border-gray-800">
-              {(['all', 'Minimalist', 'Technical', 'Creative'] as const).map((cat) => {
+              {(['all', 'Apple Glass', 'Minimalist', 'Technical', 'Creative'] as const).map((cat) => {
                 const isSelected = activeThemeCategory === cat;
                 const count = cat === 'all' ? PALETTE_THEMES.length : PALETTE_THEMES.filter(t => t.category === cat).length;
                 return (
@@ -1037,7 +1037,7 @@ export const GitHubRepoSync: React.FC<GitHubRepoSyncProps> = ({
                     key={cat}
                     type="button"
                     onClick={() => setActiveThemeCategory(cat)}
-                    className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    className={`flex-1 min-w-[75px] py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
                       isSelected
                         ? 'bg-cyan-500 text-gray-950 shadow-md shadow-cyan-500/20'
                         : 'text-gray-400 hover:text-white hover:bg-gray-900'

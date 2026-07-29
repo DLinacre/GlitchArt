@@ -48,7 +48,7 @@ interface GlitchStudioProps {
 export interface ColorPalettePreset {
   id: string;
   name: string;
-  category: 'Minimalist' | 'Technical' | 'Creative';
+  category: 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative';
   primary: string;
   secondary: string;
   description: string;
@@ -58,6 +58,22 @@ export interface ColorPalettePreset {
   glowClass: string;
   previewCardBorder: string;
   previewCardBg: string;
+}
+
+export interface PresetExample {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative';
+  themeId: string;
+  assetType: StudioConfig['assetType'];
+  titleText: string;
+  subtitleText: string;
+  handleText: string;
+  selectedIcon: StudioConfig['selectedIcon'];
+  layoutMode?: 'standard' | 'badge' | 'split' | 'minimalist';
+  glitchIntensity: number;
+  previewGradient: string;
 }
 
 export interface RepoContextPreset {
@@ -130,6 +146,64 @@ export const SAMPLE_REPOS_CONTEXT: RepoContextPreset[] = [
 ];
 
 export const PALETTE_THEMES: ColorPalettePreset[] = [
+  // Apple Glass Category
+  {
+    id: 'apple_dark_glass',
+    name: 'Apple-Dark-Glass',
+    category: 'Apple Glass',
+    primary: '#38BDF8',
+    secondary: '#F8FAFC',
+    description: 'Cupertino Dark Glass with Frosted Backdrop & Silver Titanium accents',
+    badgeBg: 'bg-slate-900/80 backdrop-blur-md',
+    badgeBorder: 'border-white/20',
+    badgeText: 'text-sky-200',
+    glowClass: 'shadow-[0_0_35px_rgba(56,189,248,0.2)]',
+    previewCardBorder: 'border-slate-300/30',
+    previewCardBg: 'bg-slate-900/60 backdrop-blur-xl',
+  },
+  {
+    id: 'cupertino_titanium',
+    name: 'Cupertino-Titanium',
+    category: 'Apple Glass',
+    primary: '#F1F5F9',
+    secondary: '#94A3B8',
+    description: 'Space Black Titanium Frame & Translucent Satin Glass',
+    badgeBg: 'bg-gray-900/90 backdrop-blur-md',
+    badgeBorder: 'border-slate-500/40',
+    badgeText: 'text-slate-100',
+    glowClass: 'shadow-[0_0_35px_rgba(241,245,249,0.15)]',
+    previewCardBorder: 'border-slate-400/30',
+    previewCardBg: 'bg-gray-950/70 backdrop-blur-2xl',
+  },
+  {
+    id: 'obsidian_liquid',
+    name: 'Obsidian-Liquid-Glass',
+    category: 'Apple Glass',
+    primary: '#818CF8',
+    secondary: '#C084FC',
+    description: 'Deep Translucent Obsidian Glass with Soft Ambient Glow',
+    badgeBg: 'bg-indigo-950/80 backdrop-blur-md',
+    badgeBorder: 'border-indigo-400/40',
+    badgeText: 'text-indigo-200',
+    glowClass: 'shadow-[0_0_35px_rgba(129,140,248,0.2)]',
+    previewCardBorder: 'border-indigo-400/30',
+    previewCardBg: 'bg-indigo-950/40 backdrop-blur-xl',
+  },
+  {
+    id: 'frosted_ice',
+    name: 'Frosted-Ice-Glass',
+    category: 'Apple Glass',
+    primary: '#06B6D4',
+    secondary: '#F8FAFC',
+    description: 'Subtle Satin Ice Sheen with Translucent Backdrop',
+    badgeBg: 'bg-cyan-950/80 backdrop-blur-md',
+    badgeBorder: 'border-cyan-400/40',
+    badgeText: 'text-cyan-200',
+    glowClass: 'shadow-[0_0_35px_rgba(6,182,212,0.2)]',
+    previewCardBorder: 'border-cyan-400/30',
+    previewCardBg: 'bg-cyan-950/30 backdrop-blur-xl',
+  },
+
   // Minimalist Category
   {
     id: 'stealth_white',
@@ -319,6 +393,129 @@ export const PALETTE_THEMES: ColorPalettePreset[] = [
   },
 ];
 
+export const PRESET_EXAMPLES: PresetExample[] = [
+  {
+    id: 'apple_glass_portfolio',
+    title: 'Apple Dark Glass Studio',
+    subtitle: 'Cupertino translucent dark glass card with sky blue & silver titanium accents',
+    category: 'Apple Glass',
+    themeId: 'apple_dark_glass',
+    assetType: 'banner',
+    titleText: 'LINACRE.SITE',
+    subtitleText: 'Cupertino Dark Glass & Sleek System Architecture',
+    handleText: '@dlinacre // macOS Sequoia',
+    selectedIcon: 'code',
+    layoutMode: 'standard',
+    glitchIntensity: 0,
+    previewGradient: 'from-slate-900 via-sky-950 to-slate-950',
+  },
+  {
+    id: 'cupertino_titanium_monogram',
+    title: 'Cupertino Space Titanium',
+    subtitle: 'Space black titanium frame with subtle frosted satin glass',
+    category: 'Apple Glass',
+    themeId: 'cupertino_titanium',
+    assetType: 'avatar',
+    titleText: 'DL',
+    subtitleText: 'Senior Full-Stack Architect',
+    handleText: 'v2.5.0',
+    selectedIcon: 'circuit',
+    layoutMode: 'badge',
+    glitchIntensity: 0,
+    previewGradient: 'from-gray-950 via-slate-900 to-black',
+  },
+  {
+    id: 'liquid_obsidian_engine',
+    title: 'Liquid Obsidian Glass',
+    subtitle: 'Deep translucent obsidian with soft indigo ambient glow',
+    category: 'Apple Glass',
+    themeId: 'obsidian_liquid',
+    assetType: 'banner',
+    titleText: 'LIN4CRE',
+    subtitleText: 'High-Performance Async Engines & Distributed Systems',
+    handleText: 'Obsidian Build',
+    selectedIcon: 'terminal',
+    layoutMode: 'standard',
+    glitchIntensity: 5,
+    previewGradient: 'from-indigo-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'stealth_porcelain_clean',
+    title: 'Minimalist Porcelain',
+    subtitle: 'Stark white typography on clean dark charcoal backdrop',
+    category: 'Minimalist',
+    themeId: 'stealth_white',
+    assetType: 'banner',
+    titleText: 'DLINACRE',
+    subtitleText: 'Clean Vector Minimalist & Developer Brand Hub',
+    handleText: 'minimal',
+    selectedIcon: 'code',
+    layoutMode: 'minimalist',
+    glitchIntensity: 0,
+    previewGradient: 'from-slate-950 via-slate-900 to-gray-950',
+  },
+  {
+    id: 'nordic_slate_docs',
+    title: 'Nordic Slate Docs',
+    subtitle: 'Frost blue & slate gray for developer documentation and tools',
+    category: 'Minimalist',
+    themeId: 'nordic_slate',
+    assetType: 'repo_card',
+    titleText: 'CYBER-ENGINE',
+    subtitleText: 'Modular C++ WebGL Graphics & Packet Renderer',
+    handleText: 'C++20',
+    selectedIcon: 'wrench',
+    layoutMode: 'standard',
+    glitchIntensity: 0,
+    previewGradient: 'from-sky-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'matrix_hacker_cli',
+    title: 'Terminal Matrix CLI',
+    subtitle: 'Hacker green CRT scanlines & terminal shell aesthetic',
+    category: 'Technical',
+    themeId: 'matrix_green',
+    assetType: 'banner',
+    titleText: 'AUTH-VAULT',
+    subtitleText: 'Zero-Trust Encrypted Cryptographic Protocol',
+    handleText: 'BUILD: PASSING',
+    selectedIcon: 'shield',
+    layoutMode: 'standard',
+    glitchIntensity: 20,
+    previewGradient: 'from-emerald-950 via-gray-950 to-emerald-950',
+  },
+  {
+    id: 'vaporwave_synth_80s',
+    title: 'Vaporwave 80s Synth',
+    subtitle: 'Hot neon pink & violet sunset grid for game engines',
+    category: 'Creative',
+    themeId: 'synth_purple',
+    assetType: 'banner',
+    titleText: 'NEON-RUNNER',
+    subtitleText: 'High-Octane Particle Physics Web Engine',
+    handleText: 'ThreeJS',
+    selectedIcon: 'joystick',
+    layoutMode: 'split',
+    glitchIntensity: 35,
+    previewGradient: 'from-purple-950 via-pink-950 to-slate-950',
+  },
+  {
+    id: 'rust_encrypted_vault',
+    title: 'Rust Security Vault',
+    subtitle: 'Amber security shield & vault encryption HUD',
+    category: 'Technical',
+    themeId: 'rust_vault',
+    assetType: 'repo_card',
+    titleText: 'SECURE-VAULT',
+    subtitleText: 'Memory-Safe Cryptography & Auth Protocol',
+    handleText: 'Rust 1.78',
+    selectedIcon: 'shield',
+    layoutMode: 'standard',
+    glitchIntensity: 10,
+    previewGradient: 'from-amber-950 via-gray-950 to-red-950',
+  },
+];
+
 export const GlitchStudio: React.FC<GlitchStudioProps> = ({
   activeProfile,
   initialText,
@@ -343,6 +540,30 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
 
   const [copied, setCopied] = useState(false);
   const [liveGlitchMode, setLiveGlitchMode] = useState(false);
+
+  // Preset Examples Category State & Filtering
+  const [activePresetCategory, setActivePresetCategory] = useState<'all' | 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative'>('all');
+
+  const filteredPresetExamples = PRESET_EXAMPLES.filter((ex) => {
+    if (activePresetCategory === 'all') return true;
+    return ex.category === activePresetCategory;
+  });
+
+  const handleApplyPresetExample = (ex: PresetExample) => {
+    const theme = PALETTE_THEMES.find((t) => t.id === ex.themeId) || PALETTE_THEMES[0];
+    setSelectedThemeId(theme.id);
+    setConfig((prev) => ({
+      ...prev,
+      titleText: ex.titleText,
+      subtitleText: ex.subtitleText,
+      handleText: ex.handleText,
+      selectedIcon: ex.selectedIcon,
+      themeColor: theme.primary,
+      secondaryColor: theme.secondary,
+      glitchIntensity: ex.glitchIntensity,
+      assetType: ex.assetType,
+    }));
+  };
 
   // Gemini AI Auto-Generate state
   const [selectedRepoId, setSelectedRepoId] = useState<string>('glitch-tech-ui');
@@ -715,25 +936,100 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
       <div className="lg:col-span-5 space-y-6 bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
         <div className="flex items-center justify-between pb-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-red-400" />
-            <h2 className="text-lg font-bold text-white">Glitch Tech Studio Generator</h2>
+            <Sparkles className="w-5 h-5 text-sky-400" />
+            <h2 className="text-lg font-bold text-white">Brand Asset & Theme Studio</h2>
           </div>
           <button
             onClick={() => {
-              handlePaletteSelect('cyber_cyan');
+              handlePaletteSelect('apple_dark_glass');
               setConfig({
                 ...config,
                 titleText: activeProfile === 'dlinacre' ? 'DLINACRE' : activeProfile === 'lin4cre' ? 'LIN4CRE' : 'LINACRE.SITE',
-                glitchIntensity: 45,
+                glitchIntensity: 0,
                 themeColor: PALETTE_THEMES[0].primary,
                 secondaryColor: PALETTE_THEMES[0].secondary,
               });
             }}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
             title="Reset Controls"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Preset Examples Showcase Gallery (1-Click Apply) */}
+        <div className="bg-gradient-to-br from-slate-900 via-gray-950 to-slate-900 border border-slate-700/60 rounded-2xl p-4 space-y-3 shadow-xl">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-sky-400" />
+              <h3 className="text-xs font-mono font-bold text-white">PRESET EXAMPLES & EXAMPLES GALLERY</h3>
+            </div>
+            <span className="text-[10px] font-mono text-sky-400 font-bold">1-Click Apply</span>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-gray-950 rounded-xl border border-gray-800">
+            {(['all', 'Apple Glass', 'Minimalist', 'Technical', 'Creative'] as const).map((cat) => {
+              const isSelected = activePresetCategory === cat;
+              const count = cat === 'all' ? PRESET_EXAMPLES.length : PRESET_EXAMPLES.filter((e) => e.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setActivePresetCategory(cat)}
+                  className={`flex-1 min-w-[70px] py-1 px-1.5 rounded-lg text-[10px] font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    isSelected
+                      ? 'bg-sky-500 text-gray-950 shadow-md shadow-sky-500/20'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-900'
+                  }`}
+                >
+                  <span>{cat === 'all' ? 'All' : cat}</span>
+                  <span className={`text-[8px] px-1 py-0.2 rounded-full ${isSelected ? 'bg-gray-950 text-sky-300' : 'bg-gray-900 text-gray-400'}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Preset Example Showcase Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+            {filteredPresetExamples.map((ex) => {
+              const isCurrentActive = config.titleText === ex.titleText && selectedThemeId === ex.themeId;
+              return (
+                <div
+                  key={ex.id}
+                  className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-2 bg-gradient-to-br ${ex.previewGradient} ${
+                    isCurrentActive
+                      ? 'border-sky-400 ring-1 ring-sky-400 shadow-md shadow-sky-500/20'
+                      : 'border-slate-800/80 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div>
+                      <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
+                        <span>{ex.title}</span>
+                      </span>
+                      <p className="text-[10px] text-gray-300 mt-0.5 line-clamp-1">{ex.subtitle}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1.5 border-t border-white/10 text-[9px] font-mono">
+                    <span className="px-1.5 py-0.5 rounded border border-white/20 bg-black/40 text-sky-200">
+                      {ex.category}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPresetExample(ex)}
+                      className="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-gray-950 border border-sky-400/40 font-bold transition-all cursor-pointer"
+                    >
+                      {isCurrentActive ? 'Active ✓' : 'Load Example'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Gemini AI Auto-Generate Panel */}

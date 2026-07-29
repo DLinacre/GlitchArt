@@ -18,6 +18,10 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isZipping, setIsZipping] = useState(false);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
+  const [filenameSuffix, setFilenameSuffix] = useState<string>('bundle_v1');
+  const [isBatchZipping, setIsBatchZipping] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Flatten or filter assets
   const filteredSets = ASSET_SETS.filter((set) => {
@@ -39,6 +43,73 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
       return true;
     })
   );
+
+  const toggleSelectAsset = (id: string) => {
+    setSelectedAssetIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    const visibleIds = allVisibleAssets.map((a) => a.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedAssetIds.includes(id));
+
+    if (allSelected) {
+      setSelectedAssetIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedAssetIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleDownloadSelectedZip = async () => {
+    if (selectedAssetIds.length === 0 || isBatchZipping) return;
+    setIsBatchZipping(true);
+
+    try {
+      const zip = new JSZip();
+      const svgFolder = zip.folder('selected_svgs');
+      
+      const selectedAssets = allVisibleAssets.filter((a) => selectedAssetIds.includes(a.id));
+      
+      selectedAssets.forEach((asset, idx) => {
+        const cleanName = `${idx + 1}_${asset.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.svg`;
+        if (svgFolder) {
+          svgFolder.file(cleanName, asset.svgCode);
+        }
+      });
+
+      const manifestContent = {
+        title: 'Selected SVG Assets Export',
+        exportedAt: new Date().toISOString(),
+        count: selectedAssets.length,
+        customSuffix: filenameSuffix,
+        assets: selectedAssets.map((a) => ({
+          name: a.name,
+          category: a.category,
+          dimensions: a.dimensions,
+          description: a.description,
+        })),
+      };
+
+      zip.file('selected_manifest.json', JSON.stringify(manifestContent, null, 2));
+
+      const cleanSuffix = (filenameSuffix || 'batch').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `linacre_assets_${cleanSuffix}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setToastMsg(`Successfully exported ${selectedAssets.length} SVGs as "linacre_assets_${cleanSuffix}.zip"!`);
+      setTimeout(() => setToastMsg(null), 4000);
+    } catch (e) {
+      console.error('Failed to batch zip selected assets:', e);
+    } finally {
+      setIsBatchZipping(false);
+    }
+  };
 
   const handleCopySvg = (svgCode: string, id: string) => {
     navigator.clipboard.writeText(svgCode);
@@ -216,7 +287,7 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
             ))}
           </div>
 
-          {/* Download Collection ZIP Action */}
+          {/* Download Entire Collection ZIP Action */}
           <button
             type="button"
             onClick={handleDownloadCollectionZip}
@@ -240,6 +311,83 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
             )}
           </button>
         </div>
+
+        {/* Batch Action Toolbar for Checkbox Multi-Selection */}
+        <div className="p-3 bg-gray-950 border border-cyan-500/30 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 font-mono text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectAllVisible}
+              className="px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-cyan-500/50 rounded-lg text-cyan-300 font-bold flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={
+                  allVisibleAssets.length > 0 &&
+                  allVisibleAssets.every((a) => selectedAssetIds.includes(a.id))
+                }
+                onChange={toggleSelectAllVisible}
+                className="w-4 h-4 rounded border-gray-700 accent-cyan-400 cursor-pointer"
+              />
+              <span>
+                Select All Visible ({allVisibleAssets.length})
+              </span>
+            </button>
+
+            <div className="flex items-center gap-2 text-gray-300">
+              <span className="text-gray-400">Selected Count:</span>
+              <span className="px-2 py-0.5 bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded font-bold">
+                {selectedAssetIds.length} assets
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-1.5 bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1">
+              <span className="text-gray-400 text-[11px]">ZIP Suffix:</span>
+              <span className="text-gray-500 font-bold">linacre_assets_</span>
+              <input
+                type="text"
+                value={filenameSuffix}
+                onChange={(e) => setFilenameSuffix(e.target.value)}
+                placeholder="suffix"
+                className="w-24 bg-gray-950 border border-gray-700 rounded px-1.5 py-0.5 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-400"
+              />
+              <span className="text-gray-500 font-bold">.zip</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadSelectedZip}
+              disabled={selectedAssetIds.length === 0 || isBatchZipping}
+              className={`px-4 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                selectedAssetIds.length === 0 || isBatchZipping
+                  ? 'bg-gray-900 text-gray-500 border border-gray-800 cursor-not-allowed'
+                  : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 border border-cyan-300 shadow-md shadow-cyan-500/20'
+              }`}
+            >
+              {isBatchZipping ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Bundling {selectedAssetIds.length}...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>DOWNLOAD SELECTED ({selectedAssetIds.length})</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Toast Notification for Batch Actions */}
+        {toastMsg && (
+          <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500/50 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fadeIn">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMsg}</span>
+          </div>
+        )}
 
       </div>
 
@@ -282,87 +430,114 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
 
               {/* Items Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {itemsToDisplay.map((asset) => (
-                  <div
-                    key={asset.id}
-                    draggable={true}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(
-                        'application/json',
-                        JSON.stringify({
-                          type: 'gallery_asset',
-                          assetName: asset.name,
-                          svgCode: asset.svgCode,
-                          description: asset.description,
-                        })
-                      );
-                      e.dataTransfer.setData('text/plain', asset.name);
-                    }}
-                    className="bg-gray-900 border border-gray-800 hover:border-cyan-500/50 rounded-2xl overflow-hidden shadow-xl transition-all hover:shadow-2xl hover:shadow-cyan-500/10 flex flex-col justify-between group cursor-grab active:cursor-grabbing relative"
-                  >
-                    {/* Drag Badge Indicator */}
-                    <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="px-2 py-1 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 text-[10px] font-mono font-bold flex items-center gap-1 shadow-md">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                        <span>Drag to 🎨_folder</span>
-                      </span>
-                    </div>
+                {itemsToDisplay.map((asset) => {
+                  const isSelected = selectedAssetIds.includes(asset.id);
+                  return (
+                    <div
+                      key={asset.id}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(
+                          'application/json',
+                          JSON.stringify({
+                            type: 'gallery_asset',
+                            assetName: asset.name,
+                            svgCode: asset.svgCode,
+                            description: asset.description,
+                          })
+                        );
+                        e.dataTransfer.setData('text/plain', asset.name);
+                      }}
+                      className={`bg-gray-900 border rounded-2xl overflow-hidden shadow-xl transition-all hover:shadow-2xl hover:shadow-cyan-500/10 flex flex-col justify-between group cursor-grab active:cursor-grabbing relative ${
+                        isSelected
+                          ? 'border-cyan-400 ring-1 ring-cyan-400/50 bg-cyan-950/20 shadow-cyan-500/20'
+                          : 'border-gray-800 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      {/* Checkbox Multi-selection button in top-right */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectAsset(asset.id);
+                        }}
+                        className="absolute top-3 right-3 z-20 p-1.5 rounded-lg bg-gray-950/90 border border-gray-700 hover:border-cyan-400 text-cyan-300 flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                        title={isSelected ? 'Deselect asset' : 'Select asset for batch download'}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectAsset(asset.id)}
+                          className="w-4 h-4 rounded border-gray-600 accent-cyan-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] font-mono font-bold">
+                          {isSelected ? 'Selected' : 'Select'}
+                        </span>
+                      </button>
 
-                    {/* SVG Preview Box */}
-                    <div className="relative w-full h-48 bg-gray-950 p-4 flex items-center justify-center overflow-hidden border-b border-gray-800/80">
-                      <div
-                        className="w-full h-full flex items-center justify-center transform transition-transform group-hover:scale-105"
-                        dangerouslySetInnerHTML={{ __html: asset.svgCode }}
-                      />
-
-                      {/* Floating Quick Action Overlay */}
-                      <div className="absolute inset-0 bg-gray-950/70 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
-                        <button
-                          onClick={() => onInspectAsset(asset.svgCode, asset.name)}
-                          className="p-2.5 bg-gray-900 hover:bg-gray-800 text-cyan-300 rounded-xl border border-cyan-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
-                          title="Inspect SVG & Dimensions"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>Inspect</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleCopySvg(asset.svgCode, asset.id)}
-                          className="p-2.5 bg-gray-900 hover:bg-gray-800 text-emerald-300 rounded-xl border border-emerald-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
-                          title="Copy Raw SVG"
-                        >
-                          {copiedId === asset.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                          <span>{copiedId === asset.id ? 'Copied' : 'SVG'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDownloadPng(asset.svgCode, asset.name)}
-                          className="p-2.5 bg-gray-900 hover:bg-gray-800 text-red-300 rounded-xl border border-red-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
-                          title="Download PNG"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>PNG</span>
-                        </button>
+                      {/* Drag Badge Indicator */}
+                      <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="px-2 py-1 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 text-[10px] font-mono font-bold flex items-center gap-1 shadow-md">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                          <span>Drag to 🎨_folder</span>
+                        </span>
                       </div>
-                    </div>
 
-                    {/* Asset Details */}
-                    <div className="p-5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-bold text-gray-100 text-sm group-hover:text-cyan-300 transition-colors">
-                            {asset.name}
-                          </h4>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
-                            {asset.dimensions || 'Vector'}
-                          </span>
+                      {/* SVG Preview Box */}
+                      <div className="relative w-full h-48 bg-gray-950 p-4 flex items-center justify-center overflow-hidden border-b border-gray-800/80">
+                        <div
+                          className="w-full h-full flex items-center justify-center transform transition-transform group-hover:scale-105"
+                          dangerouslySetInnerHTML={{ __html: asset.svgCode }}
+                        />
+
+                        {/* Floating Quick Action Overlay */}
+                        <div className="absolute inset-0 bg-gray-950/70 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
+                          <button
+                            onClick={() => onInspectAsset(asset.svgCode, asset.name)}
+                            className="p-2.5 bg-gray-900 hover:bg-gray-800 text-cyan-300 rounded-xl border border-cyan-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
+                            title="Inspect SVG & Dimensions"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleCopySvg(asset.svgCode, asset.id)}
+                            className="p-2.5 bg-gray-900 hover:bg-gray-800 text-emerald-300 rounded-xl border border-emerald-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
+                            title="Copy Raw SVG"
+                          >
+                            {copiedId === asset.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                            <span>{copiedId === asset.id ? 'Copied' : 'SVG'}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDownloadPng(asset.svgCode, asset.name)}
+                            className="p-2.5 bg-gray-900 hover:bg-gray-800 text-red-300 rounded-xl border border-red-500/40 shadow-lg text-xs font-mono flex items-center gap-1.5"
+                            title="Download PNG"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span>PNG</span>
+                          </button>
                         </div>
-                        <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                          {asset.description}
-                        </p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
+                      {/* Asset Details */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-gray-100 text-sm group-hover:text-cyan-300 transition-colors">
+                              {asset.name}
+                            </h4>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
+                              {asset.dimensions || 'Vector'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                            {asset.description}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
                         <span className="text-[11px] font-mono text-cyan-400/90 truncate max-w-[200px]">
                           {asset.suggestedUsage}
                         </span>
@@ -375,10 +550,10 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
                         </button>
                       </div>
                     </div>
-
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             </div>
           );
         })}

@@ -43,6 +43,14 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
   const [lastSyncTime, setLastSyncTime] = useState<string>('Just now');
   const [syncToast, setSyncToast] = useState<string | null>(null);
   const [chartType, setChartType] = useState<'area' | 'bar'>('area');
+  const [heatmapRange, setHeatmapRange] = useState<'3months' | '6months' | '1year'>('1year');
+  const [hoveredCell, setHoveredCell] = useState<{
+    dateStr: string;
+    count: number;
+    level: number;
+    weekNum: number;
+    dayName: string;
+  } | null>(null);
 
   // Filter repos based on selected user
   const targetRepos = repos.filter((r) => {
@@ -60,10 +68,22 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
     const weeks = [];
     const seed = selectedUser === 'dlinacre' ? 12 : selectedUser === 'lin4cre' ? 24 : 36;
     let totalContribs = 0;
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const today = new Date();
+    // Start 364 days ago
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 363);
+
+    let dayCounter = 0;
 
     for (let w = 0; w < 52; w++) {
       const days = [];
       for (let d = 0; d < 7; d++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + dayCounter);
+        dayCounter++;
+
         const value = Math.sin(w * 0.4 + d * 0.7 + seed) * 10 + Math.cos(w * 0.2 + seed) * 5;
         let level = 0;
         let count = 0;
@@ -83,7 +103,17 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
         }
 
         totalContribs += count;
-        days.push({ level, count });
+        days.push({
+          level,
+          count,
+          dateStr: currentDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
+          dayName: dayNames[currentDate.getDay()],
+          weekNum: w + 1,
+        });
       }
       weeks.push(days);
     }
@@ -92,6 +122,21 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
   };
 
   const { weeks, totalContribs } = generateContributionWeeks();
+
+  // Filter weeks by selected heatmap range
+  const visibleWeeks =
+    heatmapRange === '3months'
+      ? weeks.slice(39)
+      : heatmapRange === '6months'
+      ? weeks.slice(26)
+      : weeks;
+
+  const visibleContribs = visibleWeeks.reduce(
+    (acc, week) => acc + week.reduce((wAcc, day) => wAcc + day.count, 0),
+    0
+  );
+  const totalDaysInRange = visibleWeeks.length * 7;
+  const avgDailyContribs = (visibleContribs / (totalDaysInRange || 1)).toFixed(1);
 
   // Generate 30-day commit trend data for Recharts comparison
   const generateTrendData = () => {
@@ -421,35 +466,115 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
       </div>
 
       {/* Contribution Heatmap Visualization Box */}
-      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs font-mono text-gray-400 gap-2">
+      <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-800/80 pb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-bold text-gray-200">52-Week GitHub Contribution Activity Graph</span>
-            <span className="text-[10px] text-gray-500">(Last synced: {lastSyncTime})</span>
+            <Calendar className="w-4 h-4 text-emerald-400" />
+            <div>
+              <h4 className="font-bold text-gray-200 text-xs font-mono flex items-center gap-2">
+                <span>GitHub Contribution Heatmap Grid</span>
+                <span className="text-[10px] text-emerald-300 font-normal px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800">
+                  {heatmapRange === '3months' ? 'Past 3 Months (13 Wks)' : heatmapRange === '6months' ? 'Past 6 Months (26 Wks)' : 'Past 1 Year (52 Wks)'}
+                </span>
+              </h4>
+              <p className="text-[10px] text-gray-400 font-mono">
+                {visibleContribs.toLocaleString()} contributions across {visibleWeeks.length} weeks (Avg: {avgDailyContribs}/day)
+              </p>
+            </div>
           </div>
 
-          {/* Intensity Legend */}
-          <div className="flex items-center gap-1.5 text-[10px]">
-            <span>Less</span>
-            <span className="w-2.5 h-2.5 rounded-sm bg-slate-950 border border-slate-900 inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-950 border border-emerald-900 inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-800 border border-emerald-700 inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-600 border border-emerald-500 inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 border border-emerald-300 inline-block"></span>
-            <span>More</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Time Range Selector Buttons */}
+            <div className="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setHeatmapRange('3months')}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all ${
+                  heatmapRange === '3months'
+                    ? 'bg-emerald-500 text-slate-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                3 Months
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeatmapRange('6months')}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all ${
+                  heatmapRange === '6months'
+                    ? 'bg-emerald-500 text-slate-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                6 Months
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeatmapRange('1year')}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all ${
+                  heatmapRange === '1year'
+                    ? 'bg-emerald-500 text-slate-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                1 Year
+              </button>
+            </div>
+
+            {/* Intensity Legend */}
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-400 pl-2 border-l border-gray-800">
+              <span>Less</span>
+              <span className="w-2.5 h-2.5 rounded-xs bg-slate-950 border border-slate-900 inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-950 border border-emerald-900 inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-800 border border-emerald-700 inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 border border-emerald-500 inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-400 border border-emerald-300 inline-block"></span>
+              <span>More</span>
+            </div>
           </div>
         </div>
 
-        {/* 52-Week Matrix Scrollable Container */}
+        {/* Hover Inspector HUD */}
+        <div className="h-8 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-between text-[11px] font-mono">
+          {hoveredCell ? (
+            <div className="flex items-center gap-3 text-emerald-300">
+              <span className="font-bold text-white">{hoveredCell.dateStr} ({hoveredCell.dayName}):</span>
+              <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-bold">
+                {hoveredCell.count} {hoveredCell.count === 1 ? 'contribution' : 'contributions'}
+              </span>
+              <span className="text-gray-400 text-[10px]">
+                Intensity level: {hoveredCell.level}/4 • Week #{hoveredCell.weekNum}
+              </span>
+            </div>
+          ) : (
+            <span className="text-gray-500 text-[10px]">
+              Hover over any square in the graph below to inspect detailed daily contribution counts & dates...
+            </span>
+          )}
+          <span className="text-gray-500 text-[10px] hidden sm:inline">
+            Last synced: {lastSyncTime}
+          </span>
+        </div>
+
+        {/* Matrix Scrollable Container */}
         <div className="overflow-x-auto scrollbar-thin pb-2">
-          <div className="inline-grid grid-rows-7 grid-flow-col gap-1 min-w-[700px]">
-            {weeks.map((week, wIdx) =>
+          <div className="inline-grid grid-rows-7 grid-flow-col gap-1 min-w-[300px]">
+            {visibleWeeks.map((week, wIdx) =>
               week.map((day, dIdx) => (
                 <div
                   key={`${wIdx}-${dIdx}`}
-                  title={`Week ${wIdx + 1}, Day ${dIdx + 1}: ${day.count} contributions`}
-                  className={`w-2.5 h-2.5 rounded-xs border transition-all hover:scale-125 cursor-pointer ${getCellColor(
+                  onMouseEnter={() =>
+                    setHoveredCell({
+                      dateStr: day.dateStr,
+                      count: day.count,
+                      level: day.level,
+                      weekNum: day.weekNum,
+                      dayName: day.dayName,
+                    })
+                  }
+                  onMouseLeave={() => setHoveredCell(null)}
+                  title={`${day.dateStr}: ${day.count} contributions`}
+                  className={`w-3 h-3 rounded-xs border transition-all hover:scale-150 hover:z-10 cursor-pointer ${getCellColor(
                     day.level
                   )}`}
                 />

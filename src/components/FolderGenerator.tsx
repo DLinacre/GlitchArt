@@ -4,6 +4,8 @@ import { INITIAL_FOLDER_STRUCTURE, generateReadmeBoilerplate, generateShellScrip
 import JSZip from 'jszip';
 import {
   FolderTree,
+  Folder,
+  FolderOpen,
   Download,
   Copy,
   Check,
@@ -23,7 +25,14 @@ import {
   Slash,
   Plus,
   CheckCircle2,
-  FileCheck
+  FileCheck,
+  Image,
+  Music,
+  Box,
+  Archive,
+  File,
+  GripVertical,
+  Printer
 } from 'lucide-react';
 
 interface FolderGeneratorProps {
@@ -461,13 +470,273 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
     }
   };
 
+  // Drag and Drop Tree Reordering State
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [dragOverNodeId, setDragOverNodeId] = useState<string | null>(null);
+
+  // Reorder / move dragged node into target node
+  const handleDropNode = (draggedId: string, targetId: string) => {
+    if (!draggedId || !targetId || draggedId === targetId || draggedId === 'root') return;
+
+    const newTree = JSON.parse(JSON.stringify(tree)) as FolderNode;
+
+    let draggedNode: FolderNode | null = null;
+
+    const removeNode = (node: FolderNode): boolean => {
+      if (!node.children) return false;
+      const index = node.children.findIndex((child) => child.id === draggedId);
+      if (index !== -1) {
+        draggedNode = node.children[index];
+        node.children.splice(index, 1);
+        return true;
+      }
+      return node.children.some(removeNode);
+    };
+
+    removeNode(newTree);
+
+    if (!draggedNode) return;
+
+    const insertNode = (node: FolderNode): boolean => {
+      if (node.id === targetId) {
+        if (node.type === 'folder') {
+          node.children = node.children || [];
+          node.children.push(draggedNode!);
+          return true;
+        }
+      }
+
+      if (node.children) {
+        const targetIndex = node.children.findIndex((child) => child.id === targetId);
+        if (targetIndex !== -1) {
+          const target = node.children[targetIndex];
+          if (target.type === 'folder') {
+            target.children = target.children || [];
+            target.children.push(draggedNode!);
+          } else {
+            node.children.splice(targetIndex + 1, 0, draggedNode!);
+          }
+          return true;
+        }
+
+        return node.children.some(insertNode);
+      }
+
+      return false;
+    };
+
+    insertNode(newTree);
+    setTree(newTree);
+    setDraggedNodeId(null);
+    setDragOverNodeId(null);
+  };
+
+  // Printable PDF Report Exporter
+  const handleExportPdfReport = () => {
+    const items: { path: string; name: string; type: 'file' | 'folder'; purpose?: string; formats?: string[] }[] = [];
+
+    const traverse = (n: FolderNode, currentPath: string) => {
+      const fullPath = currentPath ? `${currentPath}/${n.name}` : n.name;
+      items.push({
+        path: fullPath,
+        name: n.name,
+        type: n.type,
+        purpose: n.purpose,
+        formats: n.allowedFormats,
+      });
+
+      if (n.children) {
+        n.children.forEach((child) => traverse(child, fullPath));
+      }
+    };
+
+    traverse(tree, '');
+
+    const totalFolders = items.filter((i) => i.type === 'folder').length;
+    const totalFiles = items.filter((i) => i.type === 'file').length;
+
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>linacre.site - Asset Specification Report (${activeProfile})</title>
+          <style>
+            body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: #0f172a; padding: 40px; margin: 0; }
+            .header { border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .title { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+            .subtitle { font-size: 13px; color: #475569; margin-top: 6px; }
+            .badge { background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; font-family: monospace; letter-spacing: 1px; }
+            .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+            .stat-card { border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; background: #f8fafc; }
+            .stat-value { font-size: 28px; font-weight: 900; color: #0284c7; font-family: monospace; }
+            .stat-label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+            th { background: #0f172a; color: #fff; text-align: left; padding: 10px 14px; font-weight: 700; font-family: monospace; }
+            td { border-bottom: 1px solid #e2e8f0; padding: 10px 14px; vertical-align: top; }
+            tr:nth-child(even) { background: #f8fafc; }
+            .path { font-family: monospace; font-weight: 700; color: #0369a1; }
+            .type-tag { font-family: monospace; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+            .type-folder { background: #fef3c7; color: #92400e; }
+            .type-file { background: #e0f2fe; color: #075985; }
+            .format-tag { font-family: monospace; font-size: 10px; background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+            .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: center; }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">🎨_folder Repository Asset Report</div>
+              <div class="subtitle">Standardized Folder Specification & Asset Inventory for <strong>${activeProfile}</strong></div>
+            </div>
+            <div>
+              <span class="badge">${activeProfile.toUpperCase()} BRAND</span>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">${totalFolders}</div>
+              <div class="stat-label">Total Folders</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${totalFiles}</div>
+              <div class="stat-label">Total Files & Assets</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${new Date().toLocaleDateString()}</div>
+              <div class="stat-label">Generated Date</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 35%;">Relative Directory Path</th>
+                <th style="width: 12%;">Node Type</th>
+                <th style="width: 33%;">Purpose Description</th>
+                <th style="width: 20%;">Allowed Formats</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(item => `
+                <tr>
+                  <td class="path">${item.path}</td>
+                  <td><span class="type-tag ${item.type === 'folder' ? 'type-folder' : 'type-file'}">${item.type}</span></td>
+                  <td>${item.purpose || '—'}</td>
+                  <td>${item.formats ? item.formats.map(f => `<span class="format-tag">${f}</span>`).join('') : '—'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated automatically by linacre.site Asset Studio • Confidential & Proprietary Document
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(reportHtml);
+      printWin.document.close();
+    }
+  };
+
+  // Render File Type Lucide Icon Helper
+  const renderFileIcon = (node: FolderNode, isExpanded: boolean) => {
+    if (node.type === 'folder') {
+      if (node.id === 'root') {
+        return <FolderTree className="w-4 h-4 text-amber-400 shrink-0" />;
+      }
+      return isExpanded ? (
+        <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
+      ) : (
+        <Folder className="w-4 h-4 text-amber-400 shrink-0" />
+      );
+    }
+
+    const name = node.name.toLowerCase();
+    if (name.endsWith('.md') || name.startsWith('readme')) {
+      return <FileText className="w-4 h-4 text-emerald-400 shrink-0" />;
+    }
+    if (name.endsWith('.ts') || name.endsWith('.tsx') || name.endsWith('.js') || name.endsWith('.jsx') || name.endsWith('.json') || name.endsWith('.sh') || name.endsWith('.ps1') || name.endsWith('.py') || name.endsWith('.cpp') || name.endsWith('.rs')) {
+      return <FileCode className="w-4 h-4 text-cyan-400 shrink-0" />;
+    }
+    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.svg') || name.endsWith('.webp') || name.endsWith('.gif')) {
+      return <Image className="w-4 h-4 text-pink-400 shrink-0" />;
+    }
+    if (name.endsWith('.wav') || name.endsWith('.mp3') || name.endsWith('.flac') || name.endsWith('.ogg')) {
+      return <Music className="w-4 h-4 text-purple-400 shrink-0" />;
+    }
+    if (name.endsWith('.blend') || name.endsWith('.3ds') || name.endsWith('.obj') || name.endsWith('.fbx')) {
+      return <Box className="w-4 h-4 text-indigo-400 shrink-0" />;
+    }
+    if (name.endsWith('.psd') || name.endsWith('.ai') || name.endsWith('.fig')) {
+      return <Layers className="w-4 h-4 text-sky-400 shrink-0" />;
+    }
+    if (name.endsWith('.zip') || name.endsWith('.tar') || name.endsWith('.gz') || name.endsWith('.7z')) {
+      return <Archive className="w-4 h-4 text-orange-400 shrink-0" />;
+    }
+
+    return <File className="w-4 h-4 text-slate-400 shrink-0" />;
+  };
+
   const renderTree = (node: FolderNode, depth: number = 0) => {
     const isExpanded = expandedIds[node.id] ?? true;
     const hasChildren = node.children && node.children.length > 0;
+    const isDragging = draggedNodeId === node.id;
+    const isDragOver = dragOverNodeId === node.id && draggedNodeId !== node.id;
 
     return (
       <div key={node.id} className="select-none" style={{ paddingLeft: `${depth * 16}px` }}>
-        <div className="flex items-center gap-2 py-1.5 px-2 hover:bg-gray-800/50 rounded-lg group transition-colors">
+        <div
+          draggable={node.id !== 'root'}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            setDraggedNodeId(node.id);
+            e.dataTransfer.setData('text/plain', node.id);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedNodeId && draggedNodeId !== node.id) {
+              setDragOverNodeId(node.id);
+            }
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (dragOverNodeId === node.id) {
+              setDragOverNodeId(null);
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedNodeId) {
+              handleDropNode(draggedNodeId, node.id);
+            }
+          }}
+          className={`flex items-center gap-2 py-1.5 px-2 rounded-lg group transition-all ${
+            isDragging ? 'opacity-40 bg-gray-800/80 border border-dashed border-cyan-400/50' : ''
+          } ${
+            isDragOver ? 'bg-cyan-950/80 border border-cyan-400 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400/50' : 'hover:bg-gray-800/50'
+          }`}
+        >
+          {node.id !== 'root' && (
+            <GripVertical className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 cursor-grab active:cursor-grabbing shrink-0 opacity-40 group-hover:opacity-100" />
+          )}
+
           {hasChildren ? (
             <button
               onClick={() => toggleExpand(node.id)}
@@ -479,11 +748,7 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
             <span className="w-5"></span>
           )}
 
-          {node.type === 'folder' ? (
-            <FolderTree className="w-4 h-4 text-amber-400 shrink-0" />
-          ) : (
-            <FileCode className="w-4 h-4 text-cyan-400 shrink-0" />
-          )}
+          {renderFileIcon(node, isExpanded)}
 
           <span className="font-mono text-xs font-bold text-gray-200 group-hover:text-cyan-300">
             {node.name}
@@ -540,15 +805,26 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
           </div>
         </div>
 
-        {/* Big Download ZIP CTA */}
-        <button
-          onClick={handleDownloadZip}
-          disabled={isZipping}
-          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-gray-950 font-mono font-black text-xs shadow-xl shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-        >
-          <Download className="w-4 h-4 stroke-[2.5]" />
-          <span>{isZipping ? 'PACKING ZIP...' : 'DOWNLOAD 🎨_FOLDER.ZIP'}</span>
-        </button>
+        {/* CTAs: Export PDF Report & Big Download ZIP */}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={handleExportPdfReport}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono font-bold text-xs border border-slate-600 shadow-lg transition-all cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-sky-400" />
+            <span>EXPORT PDF REPORT</span>
+          </button>
+
+          <button
+            onClick={handleDownloadZip}
+            disabled={isZipping}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-gray-950 font-mono font-black text-xs shadow-xl shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            <Download className="w-4 h-4 stroke-[2.5]" />
+            <span>{isZipping ? 'PACKING ZIP...' : 'DOWNLOAD 🎨_FOLDER.ZIP'}</span>
+          </button>
+        </div>
       </div>
 
       {/* ------------------------------------------------------------------- */}
@@ -932,14 +1208,24 @@ export const FolderGenerator: React.FC<FolderGeneratorProps> = ({ activeProfile 
         
         {/* Left Column: Interactive Tree View */}
         <div className="lg:col-span-6 bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-800">
             <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <FolderPlus className="w-4 h-4 text-amber-400" />
-              <span>Directory Tree (Live View)</span>
+              <span>Directory Tree (Interactive Drag & Drop)</span>
             </h3>
-            <span className="text-xs font-mono text-gray-500">
-              Click arrows to expand
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportPdfReport}
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-[11px] font-mono font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Printer className="w-3 h-3 text-sky-400" />
+                <span>PDF Report</span>
+              </button>
+              <span className="text-[11px] font-mono text-gray-500 hidden sm:inline">
+                Drag items to reorder
+              </span>
+            </div>
           </div>
 
           <div className="bg-gray-950 rounded-xl p-4 border border-gray-800/80 max-h-[500px] overflow-y-auto scrollbar-thin">

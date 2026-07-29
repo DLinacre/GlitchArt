@@ -12,8 +12,22 @@ import {
   Award,
   BarChart3,
   Sparkles,
-  GitFork
+  GitFork,
+  Activity,
+  Zap,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from 'recharts';
 
 interface GitHubContributionDashboardProps {
   accounts: OAuthConnectedAccount[];
@@ -28,6 +42,7 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>('Just now');
   const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [chartType, setChartType] = useState<'area' | 'bar'>('area');
 
   // Filter repos based on selected user
   const targetRepos = repos.filter((r) => {
@@ -41,7 +56,6 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
   const topStarredRepo = [...targetRepos].sort((a, b) => b.stars - a.stars)[0] || repos[0];
 
   // Generate mock 52-week contribution heat map data (7 rows x 52 columns = 364 days)
-  // Seeded intensity levels (0: none, 1: low, 2: medium, 3: high, 4: max)
   const generateContributionWeeks = () => {
     const weeks = [];
     const seed = selectedUser === 'dlinacre' ? 12 : selectedUser === 'lin4cre' ? 24 : 36;
@@ -50,7 +64,6 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
     for (let w = 0; w < 52; w++) {
       const days = [];
       for (let d = 0; d < 7; d++) {
-        // Pseudo-random deterministic level for visual authenticity
         const value = Math.sin(w * 0.4 + d * 0.7 + seed) * 10 + Math.cos(w * 0.2 + seed) * 5;
         let level = 0;
         let count = 0;
@@ -80,6 +93,48 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
 
   const { weeks, totalContribs } = generateContributionWeeks();
 
+  // Generate 30-day commit trend data for Recharts comparison
+  const generateTrendData = () => {
+    const data = [];
+    const seed = selectedUser === 'dlinacre' ? 5 : selectedUser === 'lin4cre' ? 15 : 25;
+    const now = new Date();
+
+    let totalRecent = 0;
+    let totalPrior = 0;
+
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      // Daily commit counts generated deterministically
+      const recentCommits = Math.max(
+        0,
+        Math.floor(Math.sin(i * 0.5 + seed) * 6 + Math.cos(i * 0.3) * 4 + 7)
+      );
+      const priorCommits = Math.max(
+        0,
+        Math.floor(Math.sin(i * 0.4 + seed + 2) * 4 + Math.cos(i * 0.2) * 3 + 4)
+      );
+
+      totalRecent += recentCommits;
+      totalPrior += priorCommits;
+
+      data.push({
+        date: dateLabel,
+        'Last 30 Days (Current)': recentCommits,
+        'Prior 30 Days (Previous)': priorCommits,
+        'Rolling Avg': Math.round(((recentCommits + priorCommits) / 2) * 10) / 10,
+      });
+    }
+
+    const velocityChange = Math.round(((totalRecent - totalPrior) / (totalPrior || 1)) * 100);
+
+    return { data, totalRecent, totalPrior, velocityChange };
+  };
+
+  const { data: trendData, totalRecent, totalPrior, velocityChange } = generateTrendData();
+
   // Mock API Fetch Handler
   const handleFetchLatestActivity = () => {
     setIsFetching(true);
@@ -87,7 +142,11 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
       setIsFetching(false);
       const timeStr = new Date().toLocaleTimeString();
       setLastSyncTime(timeStr);
-      setSyncToast(`Fetched GraphQL API v4 contribution metrics for ${selectedUser === 'all' ? 'All Accounts' : `@${selectedUser}`}`);
+      setSyncToast(
+        `Fetched GraphQL API v4 contribution metrics for ${
+          selectedUser === 'all' ? 'All Accounts' : `@${selectedUser}`
+        }`
+      );
       setTimeout(() => setSyncToast(null), 3500);
     }, 600);
   };
@@ -109,7 +168,6 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
 
   return (
     <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 shadow-2xl space-y-6">
-      
       {/* Top Header & Account Filter */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-800">
         <div className="flex items-center gap-3">
@@ -124,7 +182,7 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
               </span>
             </h3>
             <p className="text-xs text-gray-400">
-              Live contribution heatmap matrix, repository star analytics, and active commit streak monitoring.
+              Live contribution heatmap matrix, 30-day commit trend analytics, and active streak monitoring.
             </p>
           </div>
         </div>
@@ -225,17 +283,152 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
         </div>
       </div>
 
+      {/* RECHARTS: 30-Day Repository Commit Frequency Trend Chart */}
+      <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-800/80 pb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <h4 className="text-xs font-bold font-mono text-white flex items-center gap-2">
+              <span>30-Day Commit Frequency & Velocity Analysis</span>
+              <span className="text-[10px] text-emerald-400 font-normal px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800">
+                Recharts Visualizer
+              </span>
+            </h4>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="text-gray-400">30d Velocity:</span>
+              <span
+                className={`font-bold px-2 py-0.5 rounded ${
+                  velocityChange >= 0
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-red-950 text-red-300 border border-red-500/40'
+                }`}
+              >
+                {velocityChange >= 0 ? `+${velocityChange}%` : `${velocityChange}%`} vs prior month
+              </span>
+            </div>
+
+            {/* Chart type toggle */}
+            <div className="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+              <button
+                onClick={() => setChartType('area')}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all ${
+                  chartType === 'area'
+                    ? 'bg-emerald-500 text-slate-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Area Trend
+              </button>
+              <button
+                onClick={() => setChartType('bar')}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all ${
+                  chartType === 'bar'
+                    ? 'bg-emerald-500 text-slate-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Bar Compare
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Recharts Container */}
+        <div className="h-64 w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            {chartType === 'area' ? (
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRecent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorPrior" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '0.75rem',
+                    color: '#f8fafc',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace', paddingTop: '8px' }} />
+                <Area
+                  type="monotone"
+                  dataKey="Last 30 Days (Current)"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorRecent)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Prior 30 Days (Previous)"
+                  stroke="#38bdf8"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 2"
+                  fillOpacity={1}
+                  fill="url(#colorPrior)"
+                />
+              </AreaChart>
+            ) : (
+              <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '0.75rem',
+                    color: '#f8fafc',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace', paddingTop: '8px' }} />
+                <Bar dataKey="Last 30 Days (Current)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Prior 30 Days (Previous)" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-gray-400 pt-2 border-t border-gray-800/80 gap-2">
+          <span>
+            Current Period Velocity: <strong className="text-emerald-400">{totalRecent} commits</strong>
+          </span>
+          <span>
+            Prior Period Benchmark: <strong className="text-cyan-400">{totalPrior} commits</strong>
+          </span>
+          <span>
+            Daily Velocity Average:{' '}
+            <strong className="text-white">{(totalRecent / 30).toFixed(1)} commits / day</strong>
+          </span>
+        </div>
+      </div>
+
       {/* Contribution Heatmap Visualization Box */}
       <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs font-mono text-gray-400 gap-2">
           <div className="flex items-center gap-2">
             <Calendar className="w-3.5 h-3.5 text-emerald-400" />
             <span className="font-bold text-gray-200">52-Week GitHub Contribution Activity Graph</span>
-            <span className="text-[10px] text-gray-500">
-              (Last synced: {lastSyncTime})
-            </span>
+            <span className="text-[10px] text-gray-500">(Last synced: {lastSyncTime})</span>
           </div>
-          
+
           {/* Intensity Legend */}
           <div className="flex items-center gap-1.5 text-[10px]">
             <span>Less</span>
@@ -265,7 +458,7 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
           </div>
         </div>
       </div>
-
     </div>
   );
 };
+

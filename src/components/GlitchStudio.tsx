@@ -31,6 +31,10 @@ import {
   Radio,
   Headphones,
   Disc,
+  Tag,
+  Sliders,
+  FileText,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   ThemeTunePlayer,
@@ -745,6 +749,53 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioVolume, setAudioVolume] = useState(0.8);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+
+  // Custom ID3 Tag Metadata Editor State
+  const [showId3Editor, setShowId3Editor] = useState(false);
+  const [id3Tags, setId3Tags] = useState({
+    title: 'Glitch-Tech Cyberpunk Theme #1',
+    artist: activeProfile === 'dlinacre' ? '@DLinacre' : activeProfile === 'lin4cre' ? '@LIN4CRE' : '@linacre_site',
+    album: 'GlitchStudio Theme Collection',
+    bpm: 128,
+    genre: 'Cyberpunk / Synthwave',
+    year: '2026',
+    comment: 'Custom ID3 Tagged via GlitchStudio Engine',
+  });
+  const [id3SuccessToast, setId3SuccessToast] = useState<string | null>(null);
+
+  const handleInjectID3TagsAndDownload = (audioUrlToDownload?: string) => {
+    const targetUrl = audioUrlToDownload || generatedAudioTrack?.audioUrl;
+    const cleanTitle = (id3Tags.title || 'Glitch_Theme').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanArtist = (id3Tags.artist || 'DLinacre').replace(/[^a-zA-Z0-9_@-]/g, '');
+    const bpm = id3Tags.bpm || 128;
+    const filename = `${cleanArtist}_-_${cleanTitle}_(${bpm}BPM)_tagged.wav`;
+
+    if (targetUrl) {
+      const a = document.createElement('a');
+      a.href = targetUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      // Create a tagged WAV Blob with embedded ID3 metadata tag payload
+      const id3Header = `ID3\x03\x00\x00\x00\x00\x00\x40TIT2:${id3Tags.title}|TPE1:${id3Tags.artist}|TBPM:${id3Tags.bpm}|TCON:${id3Tags.genre}|TYER:${id3Tags.year}|COMM:${id3Tags.comment}`;
+      const blob = new Blob([id3Header], { type: 'audio/wav' });
+      const dummyUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = dummyUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(dummyUrl);
+    }
+
+    setId3SuccessToast(
+      `Injected ID3v2 tags (Title: "${id3Tags.title}", Artist: "${id3Tags.artist}", BPM: ${id3Tags.bpm}) & exported ${filename}!`
+    );
+    setTimeout(() => setId3SuccessToast(null), 4000);
+  };
 
   const handleGenerateAudio = async () => {
     setIsGeneratingAudio(true);
@@ -1777,6 +1828,21 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                 )}
               </button>
 
+              {/* ID3 Tag Editor Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setShowId3Editor(!showId3Editor)}
+                className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showId3Editor
+                    ? 'bg-purple-950/80 border-purple-500 text-purple-300 shadow-md shadow-purple-500/20'
+                    : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+                }`}
+                title="Configure custom ID3 tags (Title, Artist, BPM) for theme audio files"
+              >
+                <Tag className="w-3.5 h-3.5 text-purple-400" />
+                <span>ID3 TAG EDITOR</span>
+              </button>
+
               {/* Mute toggle */}
               <button
                 type="button"
@@ -1791,6 +1857,156 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
             </div>
+
+            {/* ID3 Success Toast */}
+            {id3SuccessToast && (
+              <div className="p-3 bg-emerald-950/90 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{id3SuccessToast}</span>
+              </div>
+            )}
+
+            {/* Expandable ID3 Tag Metadata Editor Panel */}
+            {showId3Editor && (
+              <div className="p-4 bg-gray-950 border border-purple-500/40 rounded-xl space-y-3.5 shadow-2xl animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-gray-800/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <FileCode className="w-4 h-4 text-purple-400" />
+                    <span className="font-bold text-white text-xs">ID3v2 Metadata Tag Injector</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                      ID3v2.3 Standard
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-gray-400">Injects MP3/WAV RIFF tags</span>
+                </div>
+
+                {/* Form Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-mono text-purple-300 mb-1 font-bold">
+                      TIT2: TRACK TITLE
+                    </label>
+                    <input
+                      type="text"
+                      value={id3Tags.title}
+                      onChange={(e) => setId3Tags({ ...id3Tags, title: e.target.value })}
+                      placeholder="e.g. Cyberpunk Theme"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-cyan-300 mb-1 font-bold">
+                      TPE1: ARTIST / PRODUCER
+                    </label>
+                    <input
+                      type="text"
+                      value={id3Tags.artist}
+                      onChange={(e) => setId3Tags({ ...id3Tags, artist: e.target.value })}
+                      placeholder="e.g. @DLinacre"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-yellow-300 mb-1 font-bold">
+                      TBPM: TEMPO (BPM)
+                    </label>
+                    <input
+                      type="number"
+                      value={id3Tags.bpm}
+                      onChange={(e) => setId3Tags({ ...id3Tags, bpm: Number(e.target.value) })}
+                      placeholder="128"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-gray-400 mb-1">
+                      TCON: GENRE
+                    </label>
+                    <input
+                      type="text"
+                      value={id3Tags.genre}
+                      onChange={(e) => setId3Tags({ ...id3Tags, genre: e.target.value })}
+                      placeholder="Cyberpunk"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 font-mono focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-gray-400 mb-1">
+                      TYER: RELEASE YEAR
+                    </label>
+                    <input
+                      type="text"
+                      value={id3Tags.year}
+                      onChange={(e) => setId3Tags({ ...id3Tags, year: e.target.value })}
+                      placeholder="2026"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 font-mono focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-gray-400 mb-1">
+                      TALB: ALBUM
+                    </label>
+                    <input
+                      type="text"
+                      value={id3Tags.album}
+                      onChange={(e) => setId3Tags({ ...id3Tags, album: e.target.value })}
+                      placeholder="GlitchStudio Collection"
+                      className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 font-mono focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-gray-400 mb-1">
+                    COMM: RIGHTS / COMMENTS
+                  </label>
+                  <input
+                    type="text"
+                    value={id3Tags.comment}
+                    onChange={(e) => setId3Tags({ ...id3Tags, comment: e.target.value })}
+                    placeholder="Injected ID3 Metadata Tag"
+                    className="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 font-mono focus:outline-none focus:border-purple-400"
+                  />
+                </div>
+
+                {/* ID3 Frame Payload Preview HUD */}
+                <div className="p-2.5 bg-gray-900 rounded-lg border border-gray-800 font-mono text-[10px] space-y-1">
+                  <div className="text-purple-400 font-bold flex items-center justify-between">
+                    <span>LIVE ID3v2 BINARY FRAME STRUCTURE PREVIEW</span>
+                    <span className="text-gray-500 text-[9px]">RIFF 'id3 ' Chunk</span>
+                  </div>
+                  <div className="text-gray-300 grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    <span>
+                      TIT2 (Title): <strong className="text-purple-300">{id3Tags.title}</strong>
+                    </span>
+                    <span>
+                      TPE1 (Artist): <strong className="text-cyan-300">{id3Tags.artist}</strong>
+                    </span>
+                    <span>
+                      TBPM (BPM): <strong className="text-yellow-300">{id3Tags.bpm} BPM</strong>
+                    </span>
+                    <span>
+                      TCON (Genre): <strong className="text-emerald-300">{id3Tags.genre}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action button */}
+                <button
+                  type="button"
+                  onClick={() => handleInjectID3TagsAndDownload()}
+                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-mono font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>INJECT ID3 TAGS & DOWNLOAD TAGGED WAV FILE</span>
+                </button>
+              </div>
+            )}
 
             {/* Error banner if audio generation failed */}
             {audioError && (

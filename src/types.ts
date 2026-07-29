@@ -1,5 +1,7 @@
 export type BrandProfile = 'dlinacre' | 'lin4cre' | 'linacre_site';
 
+export type VisualPresetId = 'Cyberpunk' | 'Minimal Glass' | 'Classic Tech';
+
 export type AssetCategory = 'logo' | 'avatar' | 'banner' | 'game_icon' | 'app_icon' | 'ui_badge' | 'wallpaper';
 
 export type StyleThemeId =

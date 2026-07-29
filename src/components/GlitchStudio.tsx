@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StudioConfig, BrandProfile } from '../types';
+import { StudioConfig, BrandProfile, VisualPresetId } from '../types';
 import {
   Sparkles,
   Download,
@@ -516,12 +516,108 @@ export const PRESET_EXAMPLES: PresetExample[] = [
   },
 ];
 
+export interface VisualPresetItem {
+  id: VisualPresetId;
+  name: string;
+  subtitle: string;
+  description: string;
+  badgeText: string;
+  badgeClass: string;
+  borderAccent: string;
+  bgGradient: string;
+  glowClass: string;
+  defaultThemeId: string;
+  glitchIntensity: number;
+  scanlines: boolean;
+  gridOverlay: boolean;
+  primaryColor: string;
+  secondaryColor: string;
+  containerCss: string;
+}
+
+export const VISUAL_PRESETS: VisualPresetItem[] = [
+  {
+    id: 'Cyberpunk',
+    name: 'Cyberpunk',
+    subtitle: 'Neon Cyan & Crimson CRT Glitch',
+    description: 'High-voltage CRT glitch distortion, electric cyan/pink gradients, scanlines, and high-frequency HUD aesthetics.',
+    badgeText: 'NEON CRT GLITCH',
+    badgeClass: 'bg-cyan-950/90 border-cyan-400/60 text-cyan-200',
+    borderAccent: 'border-cyan-400/60 shadow-cyan-500/20',
+    bgGradient: 'from-cyan-950/40 via-slate-950 to-pink-950/30',
+    glowClass: 'shadow-[0_0_35px_rgba(0,240,255,0.2)]',
+    defaultThemeId: 'cyber_cyan',
+    glitchIntensity: 50,
+    scanlines: true,
+    gridOverlay: true,
+    primaryColor: '#00F0FF',
+    secondaryColor: '#FF0055',
+    containerCss: 'bg-slate-950/90 border-cyan-500/40 shadow-[0_0_35px_rgba(0,240,255,0.2)] ring-1 ring-cyan-500/30',
+  },
+  {
+    id: 'Minimal Glass',
+    name: 'Minimal Glass',
+    subtitle: 'Cupertino Frosted Dark Glass & Satin Titanium',
+    description: 'Ultra-sleek frosted backdrop blur, silver titanium borders, zero distortion noise, and liquid translucent depth.',
+    badgeText: 'FROSTED TITANIUM GLASS',
+    badgeClass: 'bg-slate-900/90 border-white/20 text-sky-200',
+    borderAccent: 'border-sky-400/60 shadow-sky-500/20',
+    bgGradient: 'from-slate-900/60 via-slate-950 to-sky-950/30',
+    glowClass: 'shadow-[0_0_35px_rgba(56,189,248,0.2)]',
+    defaultThemeId: 'apple_dark_glass',
+    glitchIntensity: 0,
+    scanlines: false,
+    gridOverlay: false,
+    primaryColor: '#38BDF8',
+    secondaryColor: '#F8FAFC',
+    containerCss: 'bg-slate-900/60 backdrop-blur-2xl border-white/20 shadow-2xl shadow-sky-950/40 ring-1 ring-white/10',
+  },
+  {
+    id: 'Classic Tech',
+    name: 'Classic Tech',
+    subtitle: 'Terminal Matrix Monospace & CAD Blueprints',
+    description: 'Developer CLI monospace shell, matrix terminal emerald glow, engineering grid overlays, and structured tech architecture.',
+    badgeText: 'MATRIX CLI TERMINAL',
+    badgeClass: 'bg-emerald-950/90 border-emerald-400/60 text-emerald-200',
+    borderAccent: 'border-emerald-400/60 shadow-emerald-500/20',
+    bgGradient: 'from-emerald-950/40 via-gray-950 to-slate-950',
+    glowClass: 'shadow-[0_0_35px_rgba(16,185,129,0.2)]',
+    defaultThemeId: 'matrix_green',
+    glitchIntensity: 20,
+    scanlines: true,
+    gridOverlay: true,
+    primaryColor: '#00FF66',
+    secondaryColor: '#00F0FF',
+    containerCss: 'bg-gray-950 border-emerald-500/40 shadow-[0_0_35px_rgba(16,185,129,0.2)] ring-1 ring-emerald-500/20',
+  },
+];
+
 export const GlitchStudio: React.FC<GlitchStudioProps> = ({
   activeProfile,
   initialText,
   onInspectAsset,
 }) => {
   const [selectedThemeId, setSelectedThemeId] = useState<string>('cyber_cyan');
+
+  // Visual Preset Library State ('Cyberpunk' | 'Minimal Glass' | 'Classic Tech')
+  const [activeVisualPreset, setActiveVisualPreset] = useState<VisualPresetId>('Minimal Glass');
+
+  const currentPreset = VISUAL_PRESETS.find((p) => p.id === activeVisualPreset) || VISUAL_PRESETS[1];
+
+  const handleSelectVisualPreset = (presetId: VisualPresetId) => {
+    const preset = VISUAL_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    setActiveVisualPreset(presetId);
+    setSelectedThemeId(preset.defaultThemeId);
+    setConfig((prev) => ({
+      ...prev,
+      themeColor: preset.primaryColor,
+      secondaryColor: preset.secondaryColor,
+      glitchIntensity: preset.glitchIntensity,
+      scanlines: preset.scanlines,
+      gridOverlay: preset.gridOverlay,
+    }));
+  };
 
   const [config, setConfig] = useState<StudioConfig>({
     profile: activeProfile,
@@ -933,28 +1029,126 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Left Control Panel Column */}
-      <div className="lg:col-span-5 space-y-6 bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center justify-between pb-4 border-b border-gray-800">
+      <div className={`lg:col-span-5 space-y-6 rounded-2xl p-6 shadow-xl transition-all duration-300 ${currentPreset.containerCss}`}>
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-sky-400" />
             <h2 className="text-lg font-bold text-white">Brand Asset & Theme Studio</h2>
           </div>
           <button
             onClick={() => {
-              handlePaletteSelect('apple_dark_glass');
+              handleSelectVisualPreset('Minimal Glass');
               setConfig({
                 ...config,
                 titleText: activeProfile === 'dlinacre' ? 'DLINACRE' : activeProfile === 'lin4cre' ? 'LIN4CRE' : 'LINACRE.SITE',
                 glitchIntensity: 0,
-                themeColor: PALETTE_THEMES[0].primary,
-                secondaryColor: PALETTE_THEMES[0].secondary,
+                themeColor: VISUAL_PRESETS[1].primaryColor,
+                secondaryColor: VISUAL_PRESETS[1].secondaryColor,
               });
             }}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             title="Reset Controls"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Preset Library Section */}
+        <div className="bg-slate-900/80 border border-slate-700/80 rounded-2xl p-4 space-y-3.5 shadow-xl relative overflow-hidden backdrop-blur-xl">
+          <div className="flex items-center justify-between pb-2.5 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                <Palette className="w-4 h-4 text-sky-400" />
+              </div>
+              <div>
+                <h3 className="text-xs font-mono font-bold text-white tracking-wider flex items-center gap-2">
+                  <span>PRESET LIBRARY</span>
+                  <span className="text-[9px] font-normal px-1.5 py-0.5 rounded bg-gray-950 text-sky-400 border border-sky-800/50">
+                    Visual Presets
+                  </span>
+                </h3>
+                <p className="text-[10px] text-gray-400">
+                  Toggle between Cyberpunk, Minimal Glass, & Classic Tech visual architecture styles
+                </p>
+              </div>
+            </div>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono border font-bold ${currentPreset.badgeClass}`}>
+              {currentPreset.name} Active
+            </span>
+          </div>
+
+          {/* Visual Preset Toggles Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {VISUAL_PRESETS.map((preset) => {
+              const isSelected = activeVisualPreset === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handleSelectVisualPreset(preset.id)}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-2 cursor-pointer relative ${
+                    isSelected
+                      ? `${preset.borderAccent} bg-slate-900/90 shadow-lg shadow-sky-500/10 ring-1 ring-sky-400/60`
+                      : 'border-slate-800/80 bg-gray-950/70 hover:bg-gray-900 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                      {preset.id === 'Cyberpunk' && <Zap className="w-3.5 h-3.5 text-cyan-400" />}
+                      {preset.id === 'Minimal Glass' && <Sparkles className="w-3.5 h-3.5 text-sky-300" />}
+                      {preset.id === 'Classic Tech' && <Terminal className="w-3.5 h-3.5 text-emerald-400" />}
+                      <span>{preset.name}</span>
+                    </span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-sky-400 shrink-0" />}
+                  </div>
+
+                  <p className="text-[10px] text-gray-400 line-clamp-2 leading-tight">
+                    {preset.subtitle}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[9px] font-mono">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: preset.primaryColor }}></span>
+                      <span className="w-2.5 h-2.5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: preset.secondaryColor }}></span>
+                    </div>
+                    <span className={`px-1.5 py-0.2 rounded ${isSelected ? 'bg-sky-500/20 text-sky-300 font-bold' : 'text-gray-500'}`}>
+                      {isSelected ? 'Active ✓' : 'Select'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Preset Detail Card */}
+          <div className="p-3 rounded-xl bg-gray-950/90 border border-gray-800/80 flex items-start gap-2.5 text-xs font-mono">
+            <div className="p-1.5 rounded-lg bg-gray-900 border border-gray-800 shrink-0 mt-0.5">
+              {activeVisualPreset === 'Cyberpunk' && <Zap className="w-4 h-4 text-cyan-400" />}
+              {activeVisualPreset === 'Minimal Glass' && <Sparkles className="w-4 h-4 text-sky-300" />}
+              {activeVisualPreset === 'Classic Tech' && <Terminal className="w-4 h-4 text-emerald-400" />}
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold text-xs">{currentPreset.name} Preset Mode</span>
+                <span className="text-[10px] text-gray-400">• {currentPreset.badgeText}</span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-relaxed">{currentPreset.description}</p>
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-gray-400">
+                <span className="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-cyan-300">
+                  Theme: {PALETTE_THEMES.find(t => t.id === currentPreset.defaultThemeId)?.name}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-purple-300">
+                  Glitch: {currentPreset.glitchIntensity}%
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-emerald-300">
+                  Scanlines: {currentPreset.scanlines ? 'ON' : 'OFF'}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-yellow-300">
+                  Grid: {currentPreset.gridOverlay ? 'ON' : 'OFF'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Preset Examples Showcase Gallery (1-Click Apply) */}

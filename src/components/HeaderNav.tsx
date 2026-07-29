@@ -1,7 +1,7 @@
-import React from 'react';
-import { BrandProfile } from '../types';
+import React, { useState } from 'react';
+import { BrandProfile, ThemePreset } from '../types';
 import { PROFILES } from '../data/profileData';
-import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard, FileJson, Sun, Eye, Contrast, Clock, Zap } from 'lucide-react';
+import { Sparkles, FolderTree, Palette, Code, Github, Download, RotateCcw, RotateCw, Keyboard, FileJson, Sun, Eye, Contrast, Clock, Zap, Wand2, ChevronDown, Check, Plus } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 interface HeaderNavProps {
@@ -22,6 +22,10 @@ interface HeaderNavProps {
   isHighContrast: boolean;
   onToggleHighContrast: () => void;
   lastModified?: string;
+  themePresets?: ThemePreset[];
+  activePresetId?: string;
+  onSelectThemePreset?: (preset: ThemePreset) => void;
+  onOpenBrandHarmonizer?: () => void;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -42,8 +46,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   isHighContrast,
   onToggleHighContrast,
   lastModified,
+  themePresets = [],
+  activePresetId = '',
+  onSelectThemePreset,
+  onOpenBrandHarmonizer,
 }) => {
   const profile = PROFILES[activeProfile];
+  const [isThemePresetOpen, setIsThemePresetOpen] = useState(false);
+  const activePreset = themePresets.find((p) => p.id === activePresetId) || themePresets[0];
 
   return (
     <header className={`sticky top-0 z-40 backdrop-blur-md text-gray-100 transition-colors ${
@@ -239,6 +249,101 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 <Keyboard className="w-4 h-4" />
               </button>
             </Tooltip>
+
+            {/* Global Theme Preset Dropdown */}
+            {themePresets.length > 0 && (
+              <div className="relative">
+                <Tooltip content="Global Brand Harmonizer Theme Presets" position="bottom">
+                  <button
+                    type="button"
+                    onClick={() => setIsThemePresetOpen(!isThemePresetOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-mono text-xs font-bold transition-all shadow-md shadow-cyan-500/10 cursor-pointer"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    {activePreset ? (
+                      <span className="flex items-center gap-1.5 truncate max-w-[120px]">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
+                          style={{ backgroundColor: activePreset.primaryColor }}
+                        />
+                        <span className="truncate">{activePreset.name}</span>
+                      </span>
+                    ) : (
+                      <span>Theme Presets</span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-cyan-400 transition-transform ${isThemePresetOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </Tooltip>
+
+                {/* Dropdown Floating Menu */}
+                {isThemePresetOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsThemePresetOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-72 bg-gray-950 border border-cyan-500/40 rounded-xl shadow-2xl z-50 p-2 space-y-1 font-mono text-xs animate-fadeIn backdrop-blur-xl">
+                      <div className="px-3 py-1.5 border-b border-gray-800 flex items-center justify-between text-[11px] text-gray-400">
+                        <span className="font-bold text-cyan-300">SAVED THEME PRESETS</span>
+                        <span className="text-[10px]">{themePresets.length} presets</span>
+                      </div>
+
+                      <div className="max-h-64 overflow-y-auto space-y-1 py-1 scrollbar-thin">
+                        {themePresets.map((preset) => {
+                          const isSelected = preset.id === activePresetId;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => {
+                                onSelectThemePreset?.(preset);
+                                setIsThemePresetOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 font-bold'
+                                  : 'hover:bg-gray-900 text-gray-300 border border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2.5 truncate">
+                                <span
+                                  className="w-3 h-3 rounded-full border border-white/20 shrink-0 shadow-xs"
+                                  style={{ backgroundColor: preset.primaryColor }}
+                                />
+                                <div className="truncate">
+                                  <div className="truncate text-xs font-bold">{preset.name}</div>
+                                  <div className="text-[10px] text-gray-400 truncate">
+                                    @{preset.brandProfile} • {preset.fontFamily.split(',')[0]}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-cyan-400 shrink-0 ml-2 stroke-[3]" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="pt-1.5 border-t border-gray-800/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsThemePresetOpen(false);
+                            onOpenBrandHarmonizer?.();
+                          }}
+                          className="w-full px-3 py-2 bg-gradient-to-r from-purple-950 to-cyan-950 border border-purple-500/40 hover:border-purple-400 rounded-lg text-purple-300 font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Brand Harmonizer & Save...</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Profile Switcher */}
             <div className={`flex rounded-lg p-1 ${

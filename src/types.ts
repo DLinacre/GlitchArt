@@ -1,5 +1,18 @@
 export type BrandProfile = 'dlinacre' | 'lin4cre' | 'linacre_site';
 
+export interface ThemePreset {
+  id: string;
+  name: string;
+  brandProfile: BrandProfile;
+  primaryColor: string; // hex
+  accentColor: string; // hex
+  fontFamily: string; // e.g. 'JetBrains Mono', 'Space Grotesk'
+  glitchPresetPrompt: string;
+  badgeText?: string;
+  description?: string;
+  isCustom?: boolean;
+}
+
 export type VisualPresetId = 'Cyberpunk' | 'Minimal Glass' | 'Classic Tech';
 
 export type AssetCategory = 'logo' | 'avatar' | 'banner' | 'game_icon' | 'app_icon' | 'ui_badge' | 'wallpaper';

@@ -42,6 +42,7 @@ import {
   generateInfiniteRandomPrompt,
   ThemeTuneTrack,
 } from '../utils/themeTuneSynth';
+import { AudioVisualizerCanvas } from './AudioVisualizerCanvas';
 
 interface GlitchStudioProps {
   activeProfile: BrandProfile;
@@ -682,6 +683,7 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
 
   // Theme Tune Synth Audio State
   const [isPlayingTune, setIsPlayingTune] = useState(false);
+  const [showAudioVisualizer, setShowAudioVisualizer] = useState(true);
   const [selectedTrackId, setSelectedTrackId] = useState<string>(THEME_TUNE_TRACKS[0].id);
   const [isMuted, setIsMuted] = useState(false);
   const playerRef = useRef<ThemeTunePlayer | null>(null);
@@ -1843,6 +1845,24 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                 <span>ID3 TAG EDITOR</span>
               </button>
 
+              {/* Dynamic Real-Time Audio Visualizer Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowAudioVisualizer(!showAudioVisualizer)}
+                className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showAudioVisualizer
+                    ? 'bg-cyan-950/90 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-500/20'
+                    : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+                }`}
+                title="Toggle dynamic real-time audio FFT spectrum visualizer"
+              >
+                <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span>VISUALIZER</span>
+                {showAudioVisualizer && (
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                )}
+              </button>
+
               {/* Mute toggle */}
               <button
                 type="button"
@@ -1857,6 +1877,15 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
             </div>
+
+            {/* Real-Time HTML5 Canvas Audio Visualizer Output */}
+            {showAudioVisualizer && (
+              <AudioVisualizerCanvas
+                player={playerRef.current}
+                isPlaying={isPlayingTune}
+                trackTitle={THEME_TUNE_TRACKS.find((t) => t.id === selectedTrackId)?.name || 'Theme Synth'}
+              />
+            )}
 
             {/* ID3 Success Toast */}
             {id3SuccessToast && (

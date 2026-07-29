@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrandProfile, AssetItem } from './types';
+import { BrandProfile, AssetItem, ThemePreset } from './types';
 import { HeaderNav } from './components/HeaderNav';
 import { ProfileHeaderCard } from './components/ProfileHeaderCard';
 import { AssetGallery } from './components/AssetGallery';
@@ -10,6 +10,8 @@ import { GitHubRepoSync } from './components/GitHubRepoSync';
 import { AssetInspectModal } from './components/AssetInspectModal';
 import { ShortcutsOverlay } from './components/ShortcutsOverlay';
 import { QuickActionsMenu } from './components/QuickActionsMenu';
+import { BrandHarmonizerModal } from './components/BrandHarmonizerModal';
+import { DEFAULT_THEME_PRESETS } from './data/themePresets';
 import { Tooltip } from './components/Tooltip';
 import { INITIAL_FOLDER_STRUCTURE, generateReadmeBoilerplate } from './data/directoryPreset';
 import JSZip from 'jszip';
@@ -32,6 +34,59 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isHighContrast, setIsHighContrast] = useState<boolean>(false);
   const [zipProgress, setZipProgress] = useState<number | null>(null);
+
+  // Global Brand Harmonizer & Theme Preset State
+  const [themePresets, setThemePresets] = useState<ThemePreset[]>(() => {
+    try {
+      const saved = localStorage.getItem('linacre_theme_presets');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading theme presets from storage', e);
+    }
+    return DEFAULT_THEME_PRESETS;
+  });
+  const [activePresetId, setActivePresetId] = useState<string>(DEFAULT_THEME_PRESETS[0].id);
+  const [isHarmonizerOpen, setIsHarmonizerOpen] = useState<boolean>(false);
+
+  const handleSelectThemePreset = useCallback((preset: ThemePreset) => {
+    setActivePresetId(preset.id);
+    setActiveProfile(preset.brandProfile);
+    if (preset.glitchPresetPrompt) {
+      setStudioPresetText(preset.glitchPresetPrompt);
+    }
+    if (preset.fontFamily) {
+      document.body.style.fontFamily = preset.fontFamily;
+    }
+    const ts = new Date().toLocaleTimeString();
+    setLastModifiedTimestamp(ts);
+  }, []);
+
+  const handleSaveCustomPreset = useCallback((newPreset: ThemePreset) => {
+    setThemePresets((prev) => {
+      const updated = [...prev, newPreset];
+      try {
+        localStorage.setItem('linacre_theme_presets', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  }, []);
+
+  const handleDeleteCustomPreset = useCallback((id: string) => {
+    setThemePresets((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem('linacre_theme_presets', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  }, []);
 
   // Sync fullscreen state change events
   useEffect(() => {
@@ -337,6 +392,10 @@ export default function App() {
         isHighContrast={isHighContrast}
         onToggleHighContrast={() => setIsHighContrast((prev) => !prev)}
         lastModified={lastModifiedTimestamp}
+        themePresets={themePresets}
+        activePresetId={activePresetId}
+        onSelectThemePreset={handleSelectThemePreset}
+        onOpenBrandHarmonizer={() => setIsHarmonizerOpen(true)}
       />
 
       {/* Sub-Header Session Status Bar */}
@@ -501,6 +560,19 @@ export default function App() {
       <ShortcutsOverlay
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* Global Brand Harmonizer Modal */}
+      <BrandHarmonizerModal
+        isOpen={isHarmonizerOpen}
+        onClose={() => setIsHarmonizerOpen(false)}
+        presets={themePresets}
+        activePresetId={activePresetId}
+        onSelectPreset={handleSelectThemePreset}
+        onSaveCustomPreset={handleSaveCustomPreset}
+        onDeleteCustomPreset={handleDeleteCustomPreset}
+        activeProfile={activeProfile}
+        studioPresetText={studioPresetText}
       />
 
       {/* Inspect Modal */}

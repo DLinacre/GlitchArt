@@ -37,6 +37,7 @@ const N = {
 
 export class ThemeTunePlayer {
   private audioCtx: AudioContext | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private isPlaying: boolean = false;
   private currentTimeout: number | null = null;
   private noteIndex: number = 0;
@@ -69,8 +70,16 @@ export class ThemeTunePlayer {
       }
     }
 
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
+    if (this.audioCtx) {
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      if (!this.analyserNode) {
+        this.analyserNode = this.audioCtx.createAnalyser();
+        this.analyserNode.fftSize = 64;
+        this.analyserNode.smoothingTimeConstant = 0.8;
+        this.analyserNode.connect(this.audioCtx.destination);
+      }
     }
 
     this.isPlaying = true;
@@ -98,7 +107,11 @@ export class ThemeTunePlayer {
       gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + stepDuration * 0.9);
 
       osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
+      if (this.analyserNode) {
+        gain.connect(this.analyserNode);
+      } else {
+        gain.connect(this.audioCtx.destination);
+      }
 
       osc.start();
       osc.stop(this.audioCtx.currentTime + stepDuration);
@@ -118,6 +131,18 @@ export class ThemeTunePlayer {
 
   public getIsPlaying(): boolean {
     return this.isPlaying;
+  }
+
+  public getFrequencyData(dataArray: Uint8Array): void {
+    if (this.analyserNode && this.isPlaying) {
+      this.analyserNode.getByteFrequencyData(dataArray);
+    }
+  }
+
+  public getWaveformData(dataArray: Uint8Array): void {
+    if (this.analyserNode && this.isPlaying) {
+      this.analyserNode.getByteTimeDomainData(dataArray);
+    }
   }
 }
 

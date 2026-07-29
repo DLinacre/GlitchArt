@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AssetItem, AssetCategory, StyleThemeId } from '../types';
 import { ASSET_SETS } from '../data/assetSets';
-import { Search, Copy, Check, Download, Eye, Sparkles, Filter, Grid, Palette, FolderDown, Loader2 } from 'lucide-react';
+import { Search, Copy, Check, Download, Eye, Sparkles, Filter, Grid, Palette, FolderDown, Loader2, ZoomIn } from 'lucide-react';
 import JSZip from 'jszip';
 
 interface AssetGalleryProps {
@@ -22,6 +22,8 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
   const [filenameSuffix, setFilenameSuffix] = useState<string>('bundle_v1');
   const [isBatchZipping, setIsBatchZipping] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [hoveredAsset, setHoveredAsset] = useState<AssetItem | null>(null);
+  const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number } | null>(null);
 
   // Flatten or filter assets
   const filteredSets = ASSET_SETS.filter((set) => {
@@ -436,6 +438,17 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
                     <div
                       key={asset.id}
                       draggable={true}
+                      onMouseEnter={(e) => {
+                        setHoveredAsset(asset);
+                        setHoverCoords({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => {
+                        setHoverCoords({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredAsset(null);
+                        setHoverCoords(null);
+                      }}
                       onDragStart={(e) => {
                         e.dataTransfer.setData(
                           'application/json',
@@ -558,6 +571,46 @@ export const AssetGallery: React.FC<AssetGalleryProps> = ({
           );
         })}
       </div>
+
+      {/* High-Contrast Floating Hover-to-Preview Portal */}
+      {hoveredAsset && hoverCoords && (
+        <div
+          style={{
+            left: `${Math.min(window.innerWidth - 340, hoverCoords.x + 20)}px`,
+            top: `${Math.max(20, Math.min(window.innerHeight - 400, hoverCoords.y - 120))}px`,
+          }}
+          className="fixed z-50 pointer-events-none w-80 bg-slate-950/95 border-2 border-cyan-400 shadow-[0_0_35px_rgba(0,240,255,0.4)] rounded-2xl p-4 space-y-3 backdrop-blur-xl animate-fadeIn"
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-cyan-300">
+              <ZoomIn className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span>HOVER PREVIEW (2.5X)</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/40 font-mono text-[10px] font-bold">
+              {hoveredAsset.category}
+            </span>
+          </div>
+
+          {/* High-Contrast Pitch Black Zoom Viewport */}
+          <div className="w-full h-44 bg-black border border-cyan-500/50 rounded-xl p-3 flex items-center justify-center overflow-hidden relative shadow-inner">
+            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 via-transparent to-pink-500/5 pointer-events-none" />
+            <div
+              className="w-full h-full flex items-center justify-center transform scale-150 transition-transform filter drop-shadow-[0_0_12px_rgba(0,240,255,0.5)]"
+              dangerouslySetInnerHTML={{ __html: hoveredAsset.svgCode }}
+            />
+          </div>
+
+          <div className="space-y-1 font-mono text-xs">
+            <h4 className="font-bold text-white text-sm truncate">{hoveredAsset.name}</h4>
+            <p className="text-[11px] text-gray-300 line-clamp-2 font-sans">{hoveredAsset.description}</p>
+          </div>
+
+          <div className="pt-2 border-t border-gray-800 flex items-center justify-between text-[10px] font-mono text-gray-400">
+            <span>Dimensions: {hoveredAsset.dimensions || '512x512'}</span>
+            <span className="text-cyan-400 font-bold">Click card for details</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

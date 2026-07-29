@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { OAuthConnectedAccount, RepoItem } from '../types';
+import { GitHubRealtimeMiniDashboard } from './GitHubRealtimeMiniDashboard';
 import {
   Github,
   Star,
@@ -583,6 +584,9 @@ export const GitHubContributionDashboard: React.FC<GitHubContributionDashboardPr
           </div>
         </div>
       </div>
+
+      {/* Real-time GitHub API Live Star & Commit Dashboard Section */}
+      <GitHubRealtimeMiniDashboard defaultRepo="DLinacre/glitch-tech-ui" />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StudioConfig, BrandProfile, VisualPresetId } from '../types';
+import { InteractiveNoiseOverlay } from './InteractiveNoiseOverlay';
 import {
   Sparkles,
   Download,
@@ -641,6 +642,7 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
 
   const [copied, setCopied] = useState(false);
   const [liveGlitchMode, setLiveGlitchMode] = useState(false);
+  const [interactiveNoiseEnabled, setInteractiveNoiseEnabled] = useState(true);
 
   // Preset Examples Category State & Filtering
   const [activePresetCategory, setActivePresetCategory] = useState<'all' | 'Apple Glass' | 'Minimalist' | 'Technical' | 'Creative'>('all');
@@ -1734,11 +1736,26 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Dynamic Interactive Noise Texture Overlay Toggle */}
+              <button
+                type="button"
+                onClick={() => setInteractiveNoiseEnabled(!interactiveNoiseEnabled)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                  interactiveNoiseEnabled
+                    ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 shadow-md shadow-cyan-500/20'
+                    : 'bg-gray-950 text-gray-500 border-gray-800 hover:text-gray-300'
+                }`}
+                title="Toggle Interactive Dynamic Noise Texture Overlay (Reacts to Mouse Move & Click Shockwave)"
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${interactiveNoiseEnabled ? 'text-cyan-400' : 'text-gray-500'}`} />
+                <span>NOISE OVERLAY: {interactiveNoiseEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+
               {/* Live Preview Mode Animation Toggle */}
               <button
                 type="button"
                 onClick={() => setLiveGlitchMode(!liveGlitchMode)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
                   liveGlitchMode
                     ? 'bg-red-500 text-white border-red-400 shadow-md shadow-red-500/30 animate-pulse'
                     : 'bg-gray-950 text-gray-400 border-gray-800 hover:text-white hover:border-gray-700'
@@ -2178,6 +2195,14 @@ export const GlitchStudio: React.FC<GlitchStudioProps> = ({
             } as React.CSSProperties}
             className={`relative w-full rounded-2xl p-4 border shadow-inner overflow-hidden flex items-center justify-center min-h-[300px] transition-all duration-300 ${activePalette.previewCardBg} ${activePalette.previewCardBorder}`}
           >
+            {/* Interactive Dynamic Noise Texture Overlay reacting to mouse & click pulse */}
+            <InteractiveNoiseOverlay
+              intensity={config.glitchIntensity}
+              primaryColor={activePalette.primary}
+              secondaryColor={activePalette.secondary}
+              enabled={interactiveNoiseEnabled}
+            />
+
             {liveGlitchMode && (
               <div className="absolute inset-0 pointer-events-none z-10 glitch-scanlines-overlay opacity-40" />
             )}
